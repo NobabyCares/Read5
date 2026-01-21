@@ -2,11 +2,10 @@ package com.example.read5.viewmodel
 
 import android.content.Context
 import android.net.Uri
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
-import com.example.read5.global.FileScanner
+import com.example.read5.utils.FileScanner
 import com.example.read5.repository.ItemInfoRepository
 import com.example.read5.repository.StoreHouseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

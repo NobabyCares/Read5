@@ -74,21 +74,6 @@ fun MainBookApp () {
 }
 
 
-// ——————— 工具函数 ———————
-fun getColorFromTitle(title: String): Color {
-    val hash = title.hashCode()
-    val r = (hash and 0xFF).toFloat() / 255f
-    val g = ((hash ushr 8) and 0xFF).toFloat() / 255f
-    val b = ((hash ushr 16) and 0xFF).toFloat() / 255f
-    return Color(r, g, b)
-}
-
-@Composable
-fun CenteredText(text: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text)
-    }
-}
 
 @Composable
 fun BookAppTheme(content: @Composable () -> Unit) {

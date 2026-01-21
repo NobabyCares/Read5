@@ -22,6 +22,8 @@ interface ItemInfoDao {
     @Query("SELECT * FROM item_info_table WHERE category = :categoryId")
     fun getPagedByCategory(categoryId: Long): PagingSource<Int, ItemInfo>
 
+
+
     // 插入（保持不变）
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(itemInfo: ItemInfo): Long

@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,13 +58,17 @@ fun BookShelfScreen(navController: NavHostController) {
 
     val storeHouseModel: StoreHouseViewModel = hiltViewModel()
     val itemInfoViewModel: ItemInfoViewModel = hiltViewModel()
-    var showImportDialog by remember { mutableStateOf(false) }
-
     val storeHouses by storeHouseModel.storeHouses.collectAsState()
 
 
-    val pagingFlow by itemInfoViewModel.pagedItems.collectAsState()
-    val itemInfos = pagingFlow.collectAsLazyPagingItems()
+    val filteredItemFlow by itemInfoViewModel.filteredPagedItems.collectAsState()
+    val items = filteredItemFlow.collectAsLazyPagingItems()
+
+
+
+    var showImportDialog by remember { mutableStateOf(false) }
+
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         // 搜索栏
@@ -108,18 +113,23 @@ fun BookShelfScreen(navController: NavHostController) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .clickable {
-                            itemInfoViewModel.toggleType(item.id)
+                            //切换仓库
                             itemInfoViewModel.setCategory(item.id)
+//                            切换类型
+                            itemInfoViewModel.toggleType(item.id)
+
                         }
                         .padding(8.dp)
                         .wrapContentWidth()
                 ) {
                     Text(
+
                         text = item.name,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+
                     )
 
                     // 只有当前项展开才显示 type，且限制高度
@@ -141,12 +151,14 @@ fun BookShelfScreen(navController: NavHostController) {
                                             .background(Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
-                                        Text(
-                                            text = tag,
-                                            fontSize = 10.sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                       Button(
+                                           onClick = {
+                                            itemInfoViewModel.setFileTypeFilter(tag)
+                                           },
+                                           shape = RoundedCornerShape(8.dp)
+                                       ) {
+                                           Text(text = tag)
+                                       }
                                     }
                                 }
                             }
@@ -165,14 +177,13 @@ fun BookShelfScreen(navController: NavHostController) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(count =  itemInfos.itemCount) { index ->
-                val item = itemInfos[index]
-                if(item != null){
-                    ItemInfoScreen(item) {
-                    }
-                }
-
+            items(count = items.itemCount) { index ->
+                items[index]?.let { ItemInfoScreen(
+                    it,
+                    onClick = { }
+                )  }
             }
+
         }
 
         // 底部播放条

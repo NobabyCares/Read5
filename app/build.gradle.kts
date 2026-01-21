@@ -62,6 +62,11 @@ android {
 
 dependencies {
 
+    // 👇 添加这一行 SAF 遍历
+    implementation(libs.androidx.documentfile)
+
+    implementation(libs.coil.compose)
+
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)

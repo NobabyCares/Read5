@@ -2,10 +2,8 @@
 
 package com.example.read5.screens
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -15,8 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.read5.global.hasAllFilesPermission
-import com.example.read5.global.requestAllFilesPermission
+import com.example.read5.utils.hasAllFilesPermission
+import com.example.read5.utils.requestAllFilesPermission
 import com.example.read5.viewmodel.ImportViewModel
 import kotlinx.coroutines.launch
 
@@ -36,15 +34,21 @@ fun StoreHouseInputDialog(
 
 
     // SAF 目录选择器
+    // ✅ 正确方式：使用 OpenDocumentTree contract（无需手动加 flags！）
     val directoryPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { uri: Uri? ->
             if (uri != null) {
-                // 1. 获取持久化权限
+                // 👇 关键：持久化权限（这里才加 flags！）
                 val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
                         Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                context.contentResolver.takePersistableUriPermission(uri, flags)
-                uriPath = uri
+                try {
+                    context.contentResolver.takePersistableUriPermission(uri, flags)
+                    uriPath = uri
+                } catch (e: SecurityException) {
+                    // 权限被拒绝（理论上不该发生，但防御性编程）
+                    e.printStackTrace()
+                }
             }
         }
     )

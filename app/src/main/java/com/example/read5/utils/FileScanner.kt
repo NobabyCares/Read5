@@ -1,8 +1,9 @@
-package com.example.read5.global
+package com.example.read5.utils
 
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.util.Log
 import com.example.read5.bean.ItemInfo
 import java.io.File
 import java.security.MessageDigest
@@ -13,6 +14,8 @@ import java.util.Locale
 object FileScanner {
     private const val SAMPLE_SIZE = 4096 // 4KB
     private const val ROOT_PATH = "storage/emulated/0/"
+
+    private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "bmp", "gif")
 
     fun findBooksByExtensions(
         extensions: Set<String> = setOf("epub", "mobi", "pdf"),
@@ -92,8 +95,7 @@ object FileScanner {
                 .joinToString("") { "%02x".format(it) }
         }
     }
-
-    // ✅ 修复版：SAF 漫画扫描
+    // ✅ 修复版：SAF 漫画扫描（仅改动路径存储格式，保留 hash）
     fun findComicBooksBySaf(
         context: Context,
         treeUri: Uri, // 必须是用户通过 OpenDocumentTree 选择的原始 URI
@@ -107,7 +109,6 @@ object FileScanner {
             DocumentsContract.getDocumentId(treeUri)
         } catch (e: IllegalArgumentException) {
             // 手动解析：从 path 中提取最后一段
-            // URI: content://.../tree/primary%3Acartoon → 我们要 "primary:cartoon"
             val path = treeUri.path ?: throw e
             val segments = path.split("/").filter { it.isNotEmpty() }
             if (segments.size >= 2 && segments[segments.size - 2] == "tree") {
@@ -123,21 +124,24 @@ object FileScanner {
                 processFolderIfComic(
                     context = context,
                     treeUri = treeUri,
+                    rootDocumentId = rootDocumentId, // ✅ 新增参数
                     folderDocumentId = child.documentId,
                     folderName = child.displayName ?: "Unknown",
                     imageExtensions = imageExtensions,
                     categoryId = categoryId,
-                    result = result
+                    result = result,
                 )
             }
         }
-
         return result
     }
+
+
 
     private fun processFolderIfComic(
         context: Context,
         treeUri: Uri,
+        rootDocumentId: String, // ✅ 新增
         folderDocumentId: String,
         folderName: String,
         imageExtensions: Set<String>,
@@ -161,20 +165,41 @@ object FileScanner {
             }
         }
 
+        // 判断是否为有效漫画目录（99% 图片）
         if (totalFiles > 0 && imageFiles * 100 >= totalFiles * 99) {
+            // ✅ 原有 hash 计算逻辑（完全保留）
             val hash = firstImageDocId?.let { docId ->
                 val fileUri = buildDocumentUri(treeUri, docId)
                 calculateContentBasedHashFromUri(context, fileUri)
             } ?: ""
 
-            // 存储方式：treeUri|folderDocumentId，便于后续重建 URI
-            val storedPath = "$treeUri|$folderDocumentId"
+            // ✅ 关键改动：用 relativePath 替代 folderDocumentId
+            val relativePath = extractRelativePath(rootDocumentId, folderDocumentId)
+            if (relativePath.isNullOrBlank()) {
+                // 如果无法计算相对路径，回退到原格式（兼容性兜底）
+                Log.w("FileScanner", "Failed to compute relative path, using folderDocumentId")
+                val storedPath = "$treeUri|$folderDocumentId"
+                result += ItemInfo(
+                    name = folderName,
+                    path = storedPath,
+                    fileSize = 0L,
+                    fileType = "folder",
+                    createTime = "",
+                    hash = hash,
+                    category = categoryId,
+                    isShow = true
+                )
+                return
+            }
+
+            // ✅ 新格式：treeUri|relativePath
+            val storedPath = "$treeUri|$relativePath"
 
             result += ItemInfo(
                 name = folderName,
                 path = storedPath,
                 fileSize = 0L,
-                fileType = "comic",
+                fileType = "folder",
                 createTime = "",
                 hash = hash,
                 category = categoryId,
@@ -182,6 +207,17 @@ object FileScanner {
             )
         }
     }
+
+
+    // ✅ 新增辅助函数（用于计算相对路径）
+    private fun extractRelativePath(rootDocId: String, folderDocId: String): String? {
+        if (folderDocId == rootDocId) return ""
+        if (!folderDocId.startsWith(rootDocId)) return null
+        val suffix = folderDocId.substring(rootDocId.length)
+        return if (suffix.startsWith("/")) suffix.substring(1) else suffix
+    }
+
+
 
     // ✅ 正确的 listChildren：基于原始 treeUri + documentId
     private fun listChildren(

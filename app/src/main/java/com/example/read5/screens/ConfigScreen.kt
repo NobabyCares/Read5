@@ -9,8 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.read5.bean.Config
-import com.example.read5.global.ConfigManager.loadConfig
-import com.example.read5.global.ConfigManager.saveConfig
+import com.example.read5.utils.ConfigManager.loadConfig
+import com.example.read5.utils.ConfigManager.saveConfig
 
 @Composable
 fun ConfigScreen() {

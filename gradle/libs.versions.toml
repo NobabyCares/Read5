@@ -23,7 +23,7 @@ mockk = "1.13.12"
 arch-core-testing = "2.2.0"
 kotlinx-serialization = "1.6.3"
 
-
+coil = "2.6.0"
 
 # ====== 新增：Room 和 Paging3 版本 ======
 room = "2.6.1"
@@ -71,6 +71,8 @@ androidx-room-paging = { group = "androidx.room", name = "room-paging", version.
 # ====== 新增：Paging3 依赖 ======
 androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
+
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 
 [plugins]

@@ -26,6 +26,8 @@ data class ItemInfo(
     var name: String = "",
     var author: String = "",
     var path: String = "",
+//如何去获取这个值?
+//    val androidId: String = "",
 //    总页数
     var totalPage: Int = 0,
 //    阅读的页数

@@ -1,4 +1,4 @@
-package com.example.read5.global
+package com.example.read5.utils
 
 import android.content.Context
 import android.content.Intent
