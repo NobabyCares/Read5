@@ -32,54 +32,12 @@ fun MainBookApp () {
         topBar = {
         },
         bottomBar = {
-            NavigationBar {
-                val items = listOf(
-                    NavItem("阅读", "reading"),
-                    NavItem("书架", "bookshelf"),
-                    NavItem("有声书", "audiobook"),
-                    NavItem("我", "profile")
-                )
-
-                items.forEach { item ->
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Filled.Home, contentDescription = null) }, // ✅ 统一用 Home
-                        label = { Text(item.title) },
-                        selected = currentRoute == item.route,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
-                            }
-                        }
-
-                    )
-                }
-            }
+            BottomBarScreen(navController)
         }
     ) { padding ->
-
-        NavHost(
-            navController = navController,
-            startDestination = "bookshelf",
-            modifier = Modifier.padding(padding)
-        ) {
-            composable("bookshelf") {
-                BookShelfScreen(navController)
-            }
-            composable("reading") { CenteredText("跳转：阅读") }
-            composable("audiobook") { CenteredText("跳转：有声书") }
-            composable("profile") { CenteredText("跳转：我的") }
-        }
-    }
+        MainNavGraph(navController, "bookshelf", padding)
+}
 }
 
 
 
-@Composable
-fun BookAppTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = lightColorScheme(),
-        typography = Typography(),
-        content = content
-    )
-}

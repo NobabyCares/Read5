@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.PagingData
 import androidx.paging.filter
 import com.example.read5.bean.ItemInfo
@@ -19,6 +20,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -41,17 +46,9 @@ class ItemInfoViewModel @Inject constructor(
     private val _fileTypeFilter = MutableStateFlow<String?>(null)
 
 
-    fun toggleType(storeId: Long) {
-        if (_expandedStoreId.value == storeId) {
-            // 收起：清空 filter，自动显示全部
-            _fileTypeFilter.value = null
-            _expandedStoreId.value = null
-        } else {
-            // 展开：记录当前仓库
-            _expandedStoreId.value = storeId
-            // 注意：此时不设置 category！category 应由 setCategory 单独控制
-        }
-    }
+    private val _searchQuery = MutableStateFlow("")
+
+
 
 
     // ✅ 核心：每当 category 变化，就发射新的 PagingData 流
@@ -81,6 +78,34 @@ class ItemInfoViewModel @Inject constructor(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = pagedItems.value // 初始不过滤
             )
+
+    val searchResults: Flow<PagingData<ItemInfo>> = _searchQuery
+        .debounce(300) // 防抖 300ms
+        .distinctUntilChanged()
+        .flatMapLatest { query ->
+            if (query.isBlank()) flowOf(PagingData.empty())
+            else itemInfoRepository.searchByName(query.trim())
+        }
+
+
+
+    fun updateQuery(newQuery: String) {
+        _searchQuery.value = newQuery
+    }
+
+
+    fun toggleType(storeId: Long) {
+        if (_expandedStoreId.value == storeId) {
+            // 收起：清空 filter，自动显示全部
+            _fileTypeFilter.value = null
+            _expandedStoreId.value = null
+        } else {
+            // 展开：记录当前仓库
+            _expandedStoreId.value = storeId
+            // 注意：此时不设置 category！category 应由 setCategory 单独控制
+        }
+    }
+
 
     // 切换分类（或设为 null 查看全部）
     fun setCategory(categoryId: Long?) {

@@ -1,5 +1,6 @@
 package com.example.read5.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,33 +59,44 @@ import com.example.read5.viewmodel.StoreHouseViewModel
 @Composable
 fun BookShelfScreen(navController: NavHostController) {
 
+    val TAG: String = "BookShelfScreen"
     val storeHouseModel: StoreHouseViewModel = hiltViewModel()
     val itemInfoViewModel: ItemInfoViewModel = hiltViewModel()
+
+
     val storeHouses by storeHouseModel.storeHouses.collectAsState()
 
 
     val filteredItemFlow by itemInfoViewModel.filteredPagedItems.collectAsState()
-    val items = filteredItemFlow.collectAsLazyPagingItems()
+    val filteritems = filteredItemFlow.collectAsLazyPagingItems()
 
 
-
+    //    导入控制
     var showImportDialog by remember { mutableStateOf(false) }
+//    搜索控制
+    var searchQuery by remember { mutableStateOf("") }
 
+    // 搜索结果（输入即搜 + 防抖）
+    val searchResults = itemInfoViewModel.searchResults.collectAsLazyPagingItems()
+    LaunchedEffect(searchQuery) {
+        itemInfoViewModel.updateQuery(searchQuery)
+    }
+
+    // ✅ 新代码：根据是否在搜索，决定显示哪个列表
+    val isSearching = searchQuery.isNotBlank()
+    val displayItems = if (isSearching) searchResults else filteritems
 
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 搜索栏
-        OutlinedTextField(
+
+        // ✅ 使用轻量 SearchBar，不占满屏幕
+        SearchBar(
+            query = searchQuery,
+            onQueryChange = { searchQuery = it },
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            value = "",
-            onValueChange = {},
-            placeholder = { Text("一句顶一万句") },
-            leadingIcon = { Icon(Icons.Filled.Home, contentDescription = "搜索占位") }, // ✅ Home
-            trailingIcon = { Text("书城", fontWeight = FontWeight.Bold) },
-            shape = RoundedCornerShape(24.dp)
         )
+
+//导入栏
         Row {
             Text(
                 text = "书城",
@@ -101,75 +115,8 @@ fun BookShelfScreen(navController: NavHostController) {
             )
         }
 
-//        仓库栏
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(storeHouses, key = { it.id }) { item ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .clickable {
-                            //切换仓库
-                            itemInfoViewModel.setCategory(item.id)
-//                            切换类型
-                            itemInfoViewModel.toggleType(item.id)
+        StoreHouseSelector(storeHouses = storeHouses)
 
-                        }
-                        .padding(8.dp)
-                        .wrapContentWidth()
-                ) {
-                    Text(
-
-                        text = item.name,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-
-                    )
-
-                    // 只有当前项展开才显示 type，且限制高度
-                    if (itemInfoViewModel.expandedStoreId.value == item.id) {
-                        // 安全分割：处理 null、空字符串、多余空格
-                        val tags = (item.type ?: "")
-                            .split(",")
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-
-                        if (tags.isNotEmpty()) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                tags.forEach { tag ->
-                                    Box(
-                                        modifier = Modifier
-                                            .background(Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    ) {
-                                       Button(
-                                           onClick = {
-                                            itemInfoViewModel.setFileTypeFilter(tag)
-                                           },
-                                           shape = RoundedCornerShape(8.dp)
-                                       ) {
-                                           Text(text = tag)
-                                       }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
-        // 图书网格
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 96.dp),
             modifier = Modifier.weight(1f),
@@ -177,13 +124,9 @@ fun BookShelfScreen(navController: NavHostController) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(count = items.itemCount) { index ->
-                items[index]?.let { ItemInfoScreen(
-                    it,
-                    onClick = { }
-                )  }
+            items(displayItems.itemCount) { index ->
+                displayItems[index]?.let { ItemInfoScreen(it, onClick = {}) }
             }
-
         }
 
         // 底部播放条
@@ -193,41 +136,18 @@ fun BookShelfScreen(navController: NavHostController) {
                 .height(60.dp),
             color = MaterialTheme.colorScheme.surfaceVariant
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.Gray)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text("哲学性自杀", fontSize = 14.sp, maxLines = 1)
-                        Text("20:02 / 42:38", fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
-                    }
-                }
-                Row {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Filled.Home, contentDescription = "播放占位") // ✅ Home
-                    }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Filled.Home, contentDescription = "关闭占位") // ✅ Home
-                    }
-                }
-            }
+            SoundScreen()
         }
     }
+
     // ✅ 关键修复：在 Column 外面（同级）添加弹窗！
     if (showImportDialog) {
         StoreHouseInputDialog(
             onDismiss = { showImportDialog = false },
         )
     }
+
+
+
+
 }

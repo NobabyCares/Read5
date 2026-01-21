@@ -14,6 +14,8 @@ interface ItemInfoRepository {
     // ✅ 新增：返回可参数化的分页流
     fun getItemsPager(categoryId: Long? = null): Flow<PagingData<ItemInfo>>
 
+     fun searchByName(name: String): Flow<PagingData<ItemInfo>>
+
     suspend fun insert(itemInfo: ItemInfo): Long
     suspend fun insert(item: List<ItemInfo>)
 }
@@ -34,6 +36,18 @@ class ItemInfoRepositoryImpl @Inject constructor(
                 } else {
                     itemInfoDao.getPagedByCategory(categoryId)
                 }
+            }
+        ).flow
+    }
+
+    override  fun searchByName(name: String): Flow<PagingData<ItemInfo>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                    itemInfoDao.searchByName(name.trim())
             }
         ).flow
     }

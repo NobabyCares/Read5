@@ -44,6 +44,7 @@ import com.example.read5.utils.ComicCoverExtractor
 import com.example.read5.utils.EpubCoverExtractor
 import com.example.read5.utils.PdfCoverGenerator
 
+//显示数据项和封面生成
 @Composable
 fun ItemInfoScreen(
     item: ItemInfo,

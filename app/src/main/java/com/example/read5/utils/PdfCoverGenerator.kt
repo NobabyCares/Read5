@@ -19,9 +19,10 @@ object PdfCoverGenerator {
 
     /** 获取封面文件对象 */
     fun getCoverFile(context: Context, hash: String): File {
-        val dir = File(context.filesDir, COVER_DIR_NAME)
+        val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+        val dir = File(baseDir, COVER_DIR_NAME)
         dir.mkdirs()
-        return File(dir, "$hash.webp")
+        return File(dir, "$hash.JPEG")
     }
 
     /** 检查封面是否存在 */
@@ -57,9 +58,9 @@ object PdfCoverGenerator {
                         val bitmap = Bitmap.createBitmap(COVER_WIDTH, height, Bitmap.Config.ARGB_8888)
                         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
 
-                        // 保存为 WebP（高压缩、高质量）
+                        // 保存为 jpg （高压缩、高质量）
                         FileOutputStream(coverFile).use { out ->
-                            bitmap.compress(Bitmap.CompressFormat.WEBP, 90, out)
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
                         }
                         bitmap.recycle()
                     }
@@ -76,7 +77,7 @@ object PdfCoverGenerator {
         return try {
             val coverFile = getCoverFile(context, hash)
             FileOutputStream(coverFile).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.WEBP, 90, out)
+                bitmap.compress(Bitmap.CompressFormat.JPEG , 90, out)
             }
             true
         } catch (e: Exception) {
