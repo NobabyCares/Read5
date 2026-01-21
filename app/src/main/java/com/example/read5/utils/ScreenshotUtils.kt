@@ -1,16 +1,24 @@
 package com.example.read5.utils
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
+import android.view.PixelCopy
 import android.view.View
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.ViewRootForInspector
 import androidx.core.view.drawToBitmap
+import com.example.read5.screens.TAG
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -19,59 +27,122 @@ import java.util.Date
 import java.util.Locale
 
 object ScreenshotUtils {
-    private const val COVER_DIR_NAME = "covers"
 
-    // 截图并保存到私有目录
-    suspend fun captureAndSave(
-        contentResolver: ContentResolver,
+    /**
+     * 尝试多种截图方法（移除废弃 API）
+     */
+     suspend fun tryCaptureScreenshot(
+        context: Context,
+        view: View
+    ): Pair<Boolean, String> = withContext(Dispatchers.Main) {
+
+        // 方法1: PixelCopy（Android 8.0+，官方推荐）
+        val activity = context as? Activity
+        if (activity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val result = captureWithPixelCopy(activity, view, context)
+                return@withContext Pair(true, result)
+            } catch (e: Exception) {
+                // 继续尝试其他方法
+                Log.e(TAG, "PixelCopy 失败: ${e.message}")
+            }
+        }
+
+        // 方法2: 安全的 Canvas 绘制（临时关闭硬件加速）
+        try {
+            val result = captureWithSafeCanvas(view, context)
+            return@withContext Pair(true, result)
+        } catch (e: Exception) {
+            return@withContext Pair(false, "截图失败: ${e.message}")
+        }
+    }
+
+    /**
+     * PixelCopy 方法（保持不变，官方安全方案）
+     */
+    @SuppressLint("NewApi")
+    private suspend fun captureWithPixelCopy(
+        activity: Activity,
         view: View,
         context: Context
-    ): String? {
-        return try {
-            // 1. 截图
+    ): String = suspendCancellableCoroutine { continuation ->
+        try {
             val bitmap = Bitmap.createBitmap(
                 view.width,
                 view.height,
                 Bitmap.Config.ARGB_8888
             )
-            val canvas = Canvas(bitmap)
-            view.draw(canvas)
+            val location = IntArray(2)
+            view.getLocationInWindow(location)
+            val srcRect = android.graphics.Rect(
+                location[0],
+                location[1],
+                location[0] + view.width,
+                location[1] + view.height
+            )
 
-            // 2. 保存到私有目录
-            saveToPrivateStorage(contentResolver, bitmap, context)
+            PixelCopy.request(
+                activity.window,
+                srcRect,
+                bitmap,
+                { copyResult ->
+                    if (copyResult == PixelCopy.SUCCESS) {
+                        val result = saveScreenshot(context, bitmap)
+                        bitmap.recycle()
+                        continuation.resumeWith(Result.success(result))
+                    } else {
+                        bitmap.recycle()
+                        continuation.resumeWith(Result.success("PixelCopy 错误: $copyResult"))
+                    }
+                },
+                android.os.Handler(android.os.Looper.getMainLooper())
+            )
         } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            continuation.resumeWith(Result.failure(e))
         }
     }
 
-    // 仅修改这一处：在参数列表末尾添加 context: Context
-    private fun saveToPrivateStorage(
-        contentResolver: ContentResolver,
-        bitmap: Bitmap,
-        context: Context  // 👈 新增，放在最后，避免破坏调用顺序
-    ): String? {
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-            .format(Date())
-        val fileName = "screenshot_$timeStamp.JPEG"  // 改为 WebP
+    /**
+     * 安全的 Canvas 绘制（替代废弃的 DrawingCache）
+     * 通过临时关闭硬件加速确保兼容性
+     */
+    private fun captureWithSafeCanvas(view: View, context: Context): String {
+        // 保存原始 layer type
+        val originalLayerType = view.layerType
+        // 临时切换到软件渲染
+        view.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
 
-        // 保存到私有目录: /Android/data/包名/files/cover/
-        val coverDir = File(
-            context.getExternalFilesDir(null) ?: context.filesDir,
-            COVER_DIR_NAME
+        val bitmap = Bitmap.createBitmap(
+            view.width,
+            view.height,
+            Bitmap.Config.ARGB_8888
         )
-        coverDir.mkdirs()
+        val canvas = Canvas(bitmap)
+        // 可选：设置背景色（避免透明区域）
+        canvas.drawColor(android.graphics.Color.WHITE)
+        view.draw(canvas)
 
-        val file = File(coverDir, fileName)
+        // 恢复原始 layer type
+        view.setLayerType(originalLayerType, null)
 
-        return try {
-            FileOutputStream(file).use { stream ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-            }
-            "图片已保存: ${file.absolutePath}"
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "保存失败"
+        val result = saveScreenshot(context, bitmap)
+        bitmap.recycle()
+        return result
+    }
+
+    /**
+     * 保存截图到私有目录（保持不变）
+     */
+    private fun saveScreenshot(context: Context, bitmap: Bitmap): String {
+        val timeStamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
+            .format(java.util.Date())
+        val fileName = "screenshot_$timeStamp.jpg"
+        val filesDir = context.getExternalFilesDir(null) ?: throw IllegalStateException("无法访问私有目录")
+        val screenshotsDir = File(filesDir, "Screenshots").apply { if (!exists()) mkdirs() }
+        val file = File(screenshotsDir, fileName)
+        java.io.FileOutputStream(file).use { fos ->
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, fos)
         }
+        return "截图保存到: ${file.absolutePath}"
     }
 }

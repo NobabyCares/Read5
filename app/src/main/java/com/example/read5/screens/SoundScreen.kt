@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 //音频播放框
 @Composable
 fun SoundScreen() {
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -54,6 +55,8 @@ fun SoundScreen() {
             IconButton(onClick = { }) {
                 Icon(Icons.Filled.Home, contentDescription = "关闭占位") // ✅ Home
             }
+            //截屏
+            ScreenshotButton()
         }
     }
 }
