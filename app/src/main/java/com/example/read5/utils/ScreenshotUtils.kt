@@ -16,7 +16,6 @@ import android.view.View
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.ViewRootForInspector
 import androidx.core.view.drawToBitmap
-import com.example.read5.screens.TAG
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -27,15 +26,22 @@ import java.util.Date
 import java.util.Locale
 
 object ScreenshotUtils {
+    val TAG = "ScreenshotUtils"
+
+    private const val COVER_DIR_NAME = "covers"
+
+    private  var COVER_FILE_NAME = ""
+
 
     /**
      * 尝试多种截图方法（移除废弃 API）
      */
      suspend fun tryCaptureScreenshot(
         context: Context,
-        view: View
+        view: View,
+        name: String = "screenshot_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.jpeg"
     ): Pair<Boolean, String> = withContext(Dispatchers.Main) {
-
+        COVER_FILE_NAME = name
         // 方法1: PixelCopy（Android 8.0+，官方推荐）
         val activity = context as? Activity
         if (activity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -133,14 +139,13 @@ object ScreenshotUtils {
     /**
      * 保存截图到私有目录（保持不变）
      */
-    private fun saveScreenshot(context: Context, bitmap: Bitmap): String {
+    private fun saveScreenshot(context: Context, bitmap: Bitmap,): String {
         val timeStamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
             .format(java.util.Date())
-        val fileName = "screenshot_$timeStamp.jpg"
         val filesDir = context.getExternalFilesDir(null) ?: throw IllegalStateException("无法访问私有目录")
-        val screenshotsDir = File(filesDir, "Screenshots").apply { if (!exists()) mkdirs() }
-        val file = File(screenshotsDir, fileName)
-        java.io.FileOutputStream(file).use { fos ->
+        val screenshotsDir = File(filesDir, COVER_DIR_NAME).apply { if (!exists()) mkdirs() }
+        val file = File(screenshotsDir, COVER_FILE_NAME)
+        FileOutputStream(file).use { fos ->
             bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, fos)
         }
         return "截图保存到: ${file.absolutePath}"

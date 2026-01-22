@@ -51,8 +51,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.example.read5.screens.readview.PdfView
 import com.example.read5.viewmodel.ItemInfoViewModel
 import com.example.read5.viewmodel.StoreHouseViewModel
+import java.net.URLEncoder
 
 
 // ——————— 书架页面 ———————
@@ -125,7 +127,12 @@ fun BookShelfScreen(navController: NavHostController) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(displayItems.itemCount) { index ->
-                displayItems[index]?.let { ItemInfoScreen(it, onClick = {}) }
+                displayItems[index]?.let { ItemInfoScreen(it, onClick = {
+                    // ✅ 正确：触发导航，传递必要的参数
+                    // ✅ 关键：对路径进行 URL 编码
+                    val encodedPath = URLEncoder.encode(it.path, "UTF-8")
+                    navController.navigate("pdfViewer/$encodedPath")
+                }) }
             }
         }
 

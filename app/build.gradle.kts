@@ -61,6 +61,16 @@ android {
 }
 
 dependencies {
+    //    pdf 库
+    // PDF 查看器 —— 使用正确的第三方库
+//    implementation("com.github.barteksc:AndroidPdfViewer:3.1.0-beta.1")
+   /* implementation("com.github.barteksc:AndroidPdfViewer:3.1.0-beta.1") {
+        exclude(group = "com.android.support")
+    }*/
+
+    // PDF 查看器
+    implementation("com.github.TalbotGooday:AndroidPdfViewer:3.1.0-beta.3")
+
 
     // 👇 添加这一行 SAF 遍历
     implementation(libs.androidx.documentfile)

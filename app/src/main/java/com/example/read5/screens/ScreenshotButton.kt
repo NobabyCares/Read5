@@ -53,7 +53,6 @@ import java.util.Locale
  * 安全截图按钮（无废弃 API）
  */
 
-val TAG = "ScreenshotButton"
 @Composable
 fun ScreenshotButton(
     modifier: Modifier = Modifier,

@@ -55,8 +55,7 @@ fun SoundScreen() {
             IconButton(onClick = { }) {
                 Icon(Icons.Filled.Home, contentDescription = "关闭占位") // ✅ Home
             }
-            //截屏
-            ScreenshotButton()
+
         }
     }
 }
