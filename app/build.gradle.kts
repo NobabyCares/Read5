@@ -69,8 +69,14 @@ dependencies {
     }*/
 
     // PDF 查看器
-    implementation("com.github.TalbotGooday:AndroidPdfViewer:3.1.0-beta.3")
+    implementation("com.github.TalbotGooday:AndroidPdfViewer:3.1.0-beta.3"){
+        exclude(group = "com.android.support")
+    }
 
+
+/*    implementation("com.github.barteksc:pdfium-android:1.9.0"){
+        exclude(group = "com.android.support")
+    }*/
 
     // 👇 添加这一行 SAF 遍历
     implementation(libs.androidx.documentfile)

@@ -1,5 +1,6 @@
 package com.example.read5.screens
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,12 +52,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.example.read5.screens.readview.PdfView
 import com.example.read5.viewmodel.ItemInfoViewModel
 import com.example.read5.viewmodel.StoreHouseViewModel
+import java.net.URLDecoder
 import java.net.URLEncoder
+import com.example.read5.singledata.PdfDocumentHolder
 
-
+// BookShelfScreen.kt
 // ——————— 书架页面 ———————
 @Composable
 fun BookShelfScreen(navController: NavHostController) {
@@ -64,6 +66,8 @@ fun BookShelfScreen(navController: NavHostController) {
     val TAG: String = "BookShelfScreen"
     val storeHouseModel: StoreHouseViewModel = hiltViewModel()
     val itemInfoViewModel: ItemInfoViewModel = hiltViewModel()
+
+
 
 
     val storeHouses by storeHouseModel.storeHouses.collectAsState()
@@ -130,8 +134,9 @@ fun BookShelfScreen(navController: NavHostController) {
                 displayItems[index]?.let { ItemInfoScreen(it, onClick = {
                     // ✅ 正确：触发导航，传递必要的参数
                     // ✅ 关键：对路径进行 URL 编码
-                    val encodedPath = URLEncoder.encode(it.path, "UTF-8")
-                    navController.navigate("pdfViewer/$encodedPath")
+                    // ✅ 关键：使用 Uri.encode()，不是 URLEncoder！
+                    PdfDocumentHolder.setCurrentItem(it)
+                    navController.navigate("pdf_view")
                 }) }
             }
         }

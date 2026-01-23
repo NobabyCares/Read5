@@ -1,30 +1,39 @@
 package com.example.read5.screens
 
+import android.net.Uri
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.read5.screens.readview.PdfView
+import com.example.read5.screens.pdfview.PdfView
 import java.net.URLDecoder
+import java.net.URLEncoder
+
+
 
 //路由控制, 后面添加路由
 @Composable
 fun MainNavGraph(
     navController: NavHostController,
     startDestination: String,
-    paddingValues: PaddingValues // 用于接收 Scaffold 的 innerPadding
+    // 用于接收 Scaffold 的 innerPadding
+    paddingValues: PaddingValues,
+    //隐藏底部导航栏
 ) {
+
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = Modifier.padding(paddingValues)
+        modifier = Modifier.padding(paddingValues),
     ) {
         composable("bookshelf") {
             BookShelfScreen(navController)
@@ -36,17 +45,22 @@ fun MainNavGraph(
             CenteredText("跳转：有声书")
         }
 
+        composable("pdf_view") {
+            PdfView()
+        }
 
-        composable(
-            route = "pdfViewer/{filePath}", // 参数名改为 filePath
+      /*  composable(
+            route = "pdf_view/{filePath}",
             arguments = listOf(
-                navArgument("filePath") { type = NavType.StringType }
+                navArgument("filePath") {
+                    type = NavType.StringType
+                    nullable = false
+                }
             )
         ) { backStackEntry ->
-            // ✅ 关键：获取并解码参数
-            val encodedPath = backStackEntry.arguments?.getString("filePath") ?: ""
-            val decodedPath = URLDecoder.decode(encodedPath, "UTF-8")
-            PdfView(path = decodedPath, modifier = Modifier.fillMaxSize())
-        }
+            var filePath = backStackEntry.arguments?.getString("filePath")
+            filePath = Uri.decode(filePath)
+            PdfView(path = filePath)
+        }*/
     }
 }
