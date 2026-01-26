@@ -61,12 +61,23 @@ android {
 }
 
 dependencies {
+
+    implementation(libs.zoomable) // 👈 就这一行
+
+
     //    pdf 库
     // PDF 查看器 —— 使用正确的第三方库
 //    implementation("com.github.barteksc:AndroidPdfViewer:3.1.0-beta.1")
    /* implementation("com.github.barteksc:AndroidPdfViewer:3.1.0-beta.1") {
         exclude(group = "com.android.support")
     }*/
+
+    //
+    /*👇 关键：添加 foundation（自动匹配 BOM 版本）, 构建 UI 所需的基础交互、布局原语和实用组件。
+    * 我这里主要是交互逻辑
+    *
+    * */
+    implementation("androidx.compose.foundation:foundation")
 
     // PDF 查看器
     implementation("com.github.TalbotGooday:AndroidPdfViewer:3.1.0-beta.3"){

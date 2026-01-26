@@ -1,4 +1,4 @@
-package com.example.read5.screens.pdfview
+package com.example.read5.screens.readview.pdfview
 
 import com.github.barteksc.pdfviewer.PDFView
 import com.shockwave.pdfium.PdfDocument

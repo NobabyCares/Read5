@@ -1,7 +1,10 @@
-package com.example.read5.screens.pdfview
+package com.example.read5.screens.readview.pdfview
 
+import android.util.Log
+import android.view.MotionEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +24,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.read5.screens.ScreenshotButton
 import com.example.read5.singledata.PdfDocumentHolder
 import com.github.barteksc.pdfviewer.PDFView
+import com.github.barteksc.pdfviewer.listener.OnTapListener
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle
 import com.shockwave.pdfium.PdfDocument
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +37,7 @@ data class Bookmark(
     val time: Long = System.currentTimeMillis()
 )
 
+val TAG: String = "PdfScreen"
 
 @Composable
 fun PdfView(
@@ -41,7 +46,15 @@ fun PdfView(
     onLoadComplete: (Int) -> Unit = { },
     onError: (Throwable) -> Unit = { }
 ) {
-    val showControls = true
+
+    val filePath = PdfDocumentHolder.currentItem
+    if (filePath == null) {
+        // 显示加载中或错误
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("文档路径无效")
+        }
+        return
+    }
 
 
     var isLoading by remember { mutableStateOf(true) }
@@ -52,14 +65,9 @@ fun PdfView(
     val pdfViewRef = remember { mutableStateOf<PDFView?>(null) }
     val bookmarks = remember { mutableStateListOf<Bookmark>() }
 
-    val filePath = PdfDocumentHolder.currentItem
-    if (filePath == null) {
-        // 显示加载中或错误
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("文档路径无效")
-        }
-        return
-    }
+    var showControls by remember { mutableStateOf(true) }
+
+
 
     // 显示加载状态
     if (isLoading) {
@@ -76,17 +84,15 @@ fun PdfView(
     }
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                // 点击屏幕显示/隐藏控制面板
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        if (event.changes.first().pressed) {
-                        }
+                detectTapGestures(
+                    onTap = {
+                        showControls = !showControls
+                        Log.d(TAG, "showControls: $showControls")
                     }
-                }
+                )
             }
     ) {
 
@@ -110,6 +116,14 @@ fun PdfView(
                         .pageSnap(true)
                         .pageFling(true)
                         .nightMode(false)
+                        .onTap(object : OnTapListener {
+                            override fun onTap(e: MotionEvent?): Boolean {
+                                // 返回 true 表示消费事件（防止穿透）
+                                showControls = !showControls
+                                Log.d(TAG, "Tapped! showControls= $ showControls")
+                                return true // 或 false，看是否要继续传递
+                            }
+                        })
                         .onLoad { n ->
                             isLoading = false
                             totalPages = n

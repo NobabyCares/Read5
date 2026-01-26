@@ -38,7 +38,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "read_app_database.db" // 数据库文件名
-                ).build()
+                )
+                    .setJournalMode(JournalMode.TRUNCATE)
+                    .build()
                 INSTANCE = instance
                 instance
             }

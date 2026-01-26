@@ -28,6 +28,23 @@ object ComicCoverExtractor {
      * @return 封面 Bitmap，失败返回 null
      */
     suspend fun extractCover(context: Context, path: String): Bitmap? = withContext(Dispatchers.IO) {
+        Log.w(TAG, "Received path:  $ path")
+
+        // 👇 新增：SAF 权限恢复
+        if (path.startsWith("content://")) {
+            val treeUri = if (path.contains('|')) {
+                Uri.parse(path.split('|')[0]) // 提取 treeUri 部分
+            } else {
+                Uri.parse(path)
+            }
+            if (DocumentsContract.isTreeUri(treeUri)) {
+                if (!restoreSafPermission(context, treeUri.toString())) {
+                    Log.e(TAG, "Failed to restore permission for  $ treeUri")
+                    return@withContext null
+                }
+            }
+        }
+
         Log.w(TAG, "Received path: $path")
         Log.w(TAG, "Is tree URI? ${path.contains("/tree/")}")
         Log.w(TAG, "extractCover called with path: $path")

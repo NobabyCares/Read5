@@ -68,7 +68,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         GlobalData.initialize(this) // ✅ 正确时机
         setContent {
-            GlobalData
             Read5Theme {
                 MainBookApp()
             }

@@ -1,4 +1,4 @@
-package com.example.read5.screens.pdfview
+package com.example.read5.screens.readview.pdfview
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

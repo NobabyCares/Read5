@@ -1,4 +1,4 @@
-package com.example.read5.screens.pdfview
+package com.example.read5.screens.readview.pdfview
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape

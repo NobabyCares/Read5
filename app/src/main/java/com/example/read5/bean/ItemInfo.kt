@@ -4,11 +4,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.example.read5.global.GlobalData
 
 
 @Entity(
     tableName = "item_info_table",
-    primaryKeys = ["path", "hash"],
+    primaryKeys = ["path", "hash", "androidId"],
     foreignKeys = [
         ForeignKey(
             entity = StoreHouse::class,
@@ -27,7 +28,7 @@ data class ItemInfo(
     var author: String = "",
     var path: String = "",
 //如何去获取这个值?
-//    val androidId: String = "",
+    val androidId: String = GlobalData.androidId,
 //    总页数
     var totalPage: Int = 0,
 //    阅读的页数
@@ -45,7 +46,7 @@ data class ItemInfo(
 //    hash
     val hash: String = "",
 //    分类
-    var category: Long ,
+    var category: Long,
 //    标签
 //    是否收藏
     var isCollect: Boolean = false,
@@ -53,3 +54,5 @@ data class ItemInfo(
     var fileSize: Long = 0,
     val fileType : String = ""
 )
+
+

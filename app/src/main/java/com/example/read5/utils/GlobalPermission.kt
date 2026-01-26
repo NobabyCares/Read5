@@ -2,8 +2,10 @@ package com.example.read5.utils
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
 import com.example.read5.bean.Config
 import kotlinx.serialization.encodeToString
@@ -58,3 +60,50 @@ object ConfigManager {
         }
     }
 }
+fun restoreSafPermission(context: Context, uriString: String): Boolean {
+    return try {
+        val uri = Uri.parse(uriString)
+
+        if (!DocumentsContract.isTreeUri(uri)) {
+            return false
+        }
+
+        // 检查是否已有持久化权限
+        val hasPermission = context.contentResolver.persistedUriPermissions
+            .any { it.uri == uri }
+
+        if (hasPermission) {
+            return true
+        }
+
+        // 尝试重新获取权限
+        return try {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+
+            // 再次检查权限是否真的获取到了
+            val granted = context.contentResolver.persistedUriPermissions
+                .any { it.uri == uri }
+
+            if (granted) {
+                true
+            } else {
+                false
+            }
+        } catch (e: SecurityException) {
+            false
+        } catch (e: Exception) {
+            false
+        }
+
+    } catch (e: Exception) {
+        false
+    }
+}
+
+data class PermissionResult(
+    val success: Boolean,
+    val message: String
+)

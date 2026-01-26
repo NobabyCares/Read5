@@ -30,6 +30,9 @@ room = "2.6.1"
 paging = "3.3.2"
 pdfViewer = "1.0.0-alpha12"
 
+#高级手势三方库
+zoomable = "1.5.0"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -75,6 +78,8 @@ androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", 
 
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 androidx-pdf-viewer = { group = "androidx.pdf", name = "pdf-viewer", version.ref = "pdfViewer" }
+
+zoomable = { group = "com.mxalbert.zoomable", name = "zoomable", version.ref = "zoomable" }
 
 
 [plugins]
