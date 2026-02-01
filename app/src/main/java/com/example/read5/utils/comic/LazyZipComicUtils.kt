@@ -3,6 +3,7 @@ package com.example.read5.utils.comic
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import com.example.read5.bean.ComicPage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,16 +16,20 @@ import kotlin.math.abs
 
 class LazyZipComicUtils(
     private val zipPath: String,
-    private val pageNames: List<String>, // ZIP 内所有图片文件名（已排序）
+    private val pageNames: List<ComicPage>, // ZIP 内所有图片文件名（已排序）
     private val cacheDir: File,
     private val scope: CoroutineScope
 ) {
+        private val TAG = "LazyZipComicUtils"
 
         // 内存缓存：最近使用的 Bitmap（避免重复解码）
         private val memoryCache = ConcurrentHashMap<String, ImageBitmap>()
 
         // 磁盘缓存：已解压的文件（避免重复 I/O）
         private val diskCache = mutableSetOf<String>()
+
+        private val MAX_PAGE_COUNT = 5
+
 
         init {
             cacheDir.mkdirs()
@@ -33,7 +38,7 @@ class LazyZipComicUtils(
         suspend fun loadPage(index: Int): ImageBitmap? = withContext(Dispatchers.IO) {
             if (index !in pageNames.indices) return@withContext null
 
-            val entryName = pageNames[index]
+            val entryName = pageNames[index].name
             val cacheKey = "$index-$entryName"
 
             // 1. 先查内存缓存
@@ -60,7 +65,7 @@ class LazyZipComicUtils(
             memoryCache[cacheKey] = imageBitmap
 
             // 5. 自动清理旧缓存（保留最近 5 页）
-            if (memoryCache.size > 5) {
+            if (memoryCache.size > MAX_PAGE_COUNT) {
                 val keysToRemove = memoryCache.keys.filter { !isRecent(it, index) }
                 keysToRemove.forEach { memoryCache.remove(it) }
             }
@@ -81,7 +86,7 @@ class LazyZipComicUtils(
 
         private fun isRecent(key: String, currentIndex: Int): Boolean {
             val pageIndex = key.substringBefore("-").toIntOrNull() ?: return false
-            return abs(pageIndex - currentIndex) <= 2
+            return abs(pageIndex - currentIndex) <= MAX_PAGE_COUNT
         }
 
         private fun sanitize(name: String): String {
