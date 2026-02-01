@@ -17,35 +17,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.read5.bean.ComicPage
 import com.example.read5.singledata.PdfDocumentHolder
+import com.example.read5.utils.comic.LazyZipComicUtils
+import com.example.read5.utils.comic.loadComicPages
 import com.mxalbert.zoomable.Zoomable
 import com.mxalbert.zoomable.rememberZoomableState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.read5.viewmodel.comic.ComicViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComicScreen(
     onBack: () -> Unit = {}
 ) {
+    val comicViewModel: ComicViewModel = hiltViewModel()
+
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     var pages by remember { mutableStateOf<List<ComicPage>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    val path = PdfDocumentHolder.currentItem?.path
-    if (path == null) {
-        return
-    }
+    val path = PdfDocumentHolder.currentItem?.path ?: return
 
     LaunchedEffect(path) {
         try {
             pages = loadComicPages(context, path)
             error = null
         } catch (e: Exception) {
-            error = "加载失败:  $ {e.message}" // ✅ 修复字符串模板（无空格）
+            error = "加载失败:  ${e.message}" // ✅ 修复字符串模板（无空格）
         }
     }
 
@@ -92,7 +96,7 @@ fun ComicScreen(
                                     .data(page.uri)
                                     .crossfade(true)
                                     .build(),
-                                contentDescription = "Page  $ {index + 1}",
+                                contentDescription = "Page  ${index + 1}",
                                 contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -125,62 +129,5 @@ fun ComicScreen(
     }
 }
 
-// 页面指示器（保持不变）
-@Composable
-fun PageIndicator(currentPage: Int, totalPages: Int, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-        color = Color.Black.copy(alpha = 0.6f),
-        shadowElevation = 4.dp
-    ) {
-        Text(
-            text = "  $currentPage /  $totalPages", // ✅ 修复字符串模板
-            color = Color.White,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-    }
-}
 
-// ========== 数据加载逻辑（保持不变）==========
-data class ComicPage(val uri: Uri, val name: String)
 
-private suspend fun loadComicPages(context: Context, storedPath: String): List<ComicPage> {
-    return withContext(Dispatchers.IO) {
-        val parts = storedPath.split('|', limit = 2)
-        if (parts.size != 2) throw IllegalArgumentException("Invalid path format")
-
-        val treeUri = Uri.parse(parts[0])
-        val folderDocumentId = parts[1]
-
-        val root = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, treeUri)
-            ?: throw IllegalStateException("Failed to access tree URI")
-
-        var current = root
-        for (segment in folderDocumentId.split("/")) {
-            if (segment.isEmpty()) continue
-            val child = current.findFile(segment)
-            if (child == null || !child.isDirectory) {
-                throw IllegalStateException("Subfolder not found:  $segment") // ✅ 修复字符串模板
-            }
-            current = child
-        }
-
-        val children = current.listFiles() ?: emptyArray()
-        val imageFiles = children.filter { it.isFile && isValidImageName(it.name) }
-            .sortedBy { it.name?.lowercase() ?: "" }
-
-        if (imageFiles.isEmpty()) throw IllegalStateException("No images found")
-
-        imageFiles.map { file ->
-            ComicPage(uri = file.uri, name = file.name ?: "unknown")
-        }
-    }
-}
-
-private fun isValidImageName(name: String?): Boolean {
-    if (name.isNullOrBlank()) return false
-    val ext = name.substringAfterLast('.', "").lowercase()
-    return ext in setOf("jpg", "jpeg", "png", "webp", "bmp", "gif")
-}
