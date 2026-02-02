@@ -22,10 +22,10 @@ import kotlin.math.abs
 class SafComicLoader(
     private val context: Context,
     private val imageFiles: List<ComicPage>
-) {
+): ComicLoader {
     private val memoryCache = LruCache<Int, ImageBitmap>(5)
 
-    suspend fun loadPage(index: Int): ImageBitmap? {
+    override suspend fun loadPage(index: Int): ImageBitmap? {
         if (index !in imageFiles.indices) return null
 
         // 1. 内存缓存
@@ -75,7 +75,7 @@ class SafComicLoader(
         return inSampleSize
     }
 
-    fun clearCache() {
+    override suspend fun clearCache() {
         memoryCache.evictAll()
     }
 }

@@ -9,7 +9,7 @@ import java.util.zip.ZipFile
 
 
 
-class LoadFile(context: Context, path: String) {
+class SafFolderLoad(context: Context, path: String) {
      val TAG = "LoadComicPages"
 
     private val context = context

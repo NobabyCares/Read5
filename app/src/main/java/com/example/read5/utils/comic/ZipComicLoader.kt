@@ -14,12 +14,12 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipFile
 import kotlin.math.abs
 
-class LazyZipComicUtils(
+class ZipComicLoader(
     private val zipPath: String,
     private val pageNames: List<ComicPage>, // ZIP 内所有图片文件名（已排序）
     private val cacheDir: File,
     private val scope: CoroutineScope
-) {
+): ComicLoader {
         private val TAG = "LazyZipComicUtils"
 
         // 内存缓存：最近使用的 Bitmap（避免重复解码）
@@ -35,7 +35,7 @@ class LazyZipComicUtils(
             cacheDir.mkdirs()
         }
 
-        suspend fun loadPage(index: Int): ImageBitmap? = withContext(Dispatchers.IO) {
+        override suspend fun loadPage(index: Int): ImageBitmap? = withContext(Dispatchers.IO) {
             if (index !in pageNames.indices) return@withContext null
 
             val entryName = pageNames[index].name
@@ -94,9 +94,11 @@ class LazyZipComicUtils(
         }
 
         // 清理所有缓存（退出时调用）
-        fun clearCache() {
+        override suspend fun clearCache() {
             memoryCache.clear()
             diskCache.clear()
             cacheDir.deleteRecursively()
         }
-    }
+
+
+}
