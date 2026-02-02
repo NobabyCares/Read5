@@ -14,7 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.read5.screens.readview.EpubScreen
-import com.example.read5.screens.readview.comic.ComicScreen
+import com.example.read5.screens.readview.comic.VirtualComicCanvas
 import com.example.read5.screens.readview.pdfview.PdfView
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -48,7 +48,8 @@ fun MainNavGraph(
         }
 
         composable("pdf_view") {
-            ComicScreen()
+//            ComicScreen()
+            VirtualComicCanvas()
         }
 
       /*  composable(

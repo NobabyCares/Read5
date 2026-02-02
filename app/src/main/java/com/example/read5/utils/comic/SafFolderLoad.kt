@@ -2,6 +2,7 @@ package com.example.read5.utils.comic
 
 import android.content.Context
 import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import com.example.read5.bean.ComicPage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,17 +19,15 @@ class SafFolderLoad(context: Context, path: String) {
 
     suspend fun loadComic(): List<ComicPage> {
         return if(path.startsWith("content://")){
-            loadSafComic()
+            loadSafComicPages()
         }else {
-            LoadZipComic()
+            loadZipComicPages()
         }
     }
 
 
-    //SAF, 这里是content:://路径
-    suspend fun loadSafComic(): List<ComicPage> {
 
-
+    suspend fun loadSafComicPages(): List<ComicPage> {
         return withContext(Dispatchers.IO) {
             val parts = path.split('|', limit = 2)
             if (parts.size != 2) throw IllegalArgumentException("Invalid path format")
@@ -36,16 +35,14 @@ class SafFolderLoad(context: Context, path: String) {
             val treeUri = Uri.parse(parts[0])
             val folderDocumentId = parts[1]
 
-            val root = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, treeUri)
+            val root = DocumentFile.fromTreeUri(context, treeUri)
                 ?: throw IllegalStateException("Failed to access tree URI")
 
             var current = root
             for (segment in folderDocumentId.split("/")) {
                 if (segment.isEmpty()) continue
                 val child = current.findFile(segment)
-                if (child == null || !child.isDirectory) {
-                    throw IllegalStateException("Subfolder not found:  $segment") // ✅ 修复字符串模板
-                }
+                    ?: throw IllegalStateException("Subfolder not found: $segment")
                 current = child
             }
 
@@ -56,20 +53,28 @@ class SafFolderLoad(context: Context, path: String) {
             if (imageFiles.isEmpty()) throw IllegalStateException("No images found")
 
             imageFiles.map { file ->
-                ComicPage(uri = file.uri, name = file.name ?: "unknown")
+                val (width, height) = getImageDimensionsFromUri(context, file.uri)
+                ComicPage(uri = file.uri, name = file.name ?: "unknown", width = width, height = height)
             }
-
         }
     }
 
-    suspend fun LoadZipComic(): List<ComicPage>{
-        return ZipFile(path).use { zipFile ->
-            zipFile.entries().asSequence().map { entry ->
-                ComicPage(
-                    name = entry.name,
-                    uri = Uri.parse("${path}#${entry.name}"),
-                )
-            }.toList()
+
+    suspend fun loadZipComicPages(): List<ComicPage> = withContext(Dispatchers.IO) {
+        ZipFile(path).use { zip ->
+            zip.entries()
+                .asSequence()
+                .filter { !it.isDirectory && isValidImageName(it.name) } // 只处理图片
+                .map { entry ->
+                    val (width, height) = getImageSizeFromZipEntry(zip, entry)
+                    ComicPage(
+                        name = entry.name,
+                        width = width,
+                        height = height,
+                        uri = null // ZIP 模式无 Uri
+                    )
+                }
+                .toList()
         }
     }
 

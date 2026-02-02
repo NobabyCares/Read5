@@ -1,3 +1,4 @@
+/*
 package com.example.read5.screens.readview.comic
 
 import androidx.compose.foundation.Image
@@ -11,7 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.read5.singledata.PdfDocumentHolder
+import com.example.read5.singledata.DocumentHolder
 import com.example.read5.viewmodel.comic.ComicViewModel
 
 @Composable
@@ -28,7 +29,7 @@ fun ComicScreen(
     val lazyListState = rememberLazyListState()
     var error by remember { mutableStateOf<String?>(null) }
 
-    val path = PdfDocumentHolder.currentItem?.path ?: return
+    val path = DocumentHolder.currentItem?.path ?: return
 
     LaunchedEffect(path) {
         try {
@@ -70,3 +71,4 @@ fun ComicScreen(
 
 
 
+*/

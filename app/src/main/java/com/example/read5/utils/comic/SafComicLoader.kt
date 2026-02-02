@@ -23,13 +23,10 @@ class SafComicLoader(
     private val context: Context,
     private val imageFiles: List<ComicPage>
 ): ComicLoader {
-    private val memoryCache = LruCache<Int, ImageBitmap>(5)
 
     override suspend fun loadPage(index: Int): ImageBitmap? {
         if (index !in imageFiles.indices) return null
 
-        // 1. 内存缓存
-        memoryCache.get(index)?.let { return it }
 
         val uri = imageFiles[index].uri ?: return null
 
@@ -52,9 +49,7 @@ class SafComicLoader(
                         this.inSampleSize = inSampleSize
                     }
                     val bitmap = BitmapFactory.decodeStream(input, null, decodeOptions)
-                    bitmap?.asImageBitmap()?.also {
-                        memoryCache.put(index, it)
-                    }
+                    bitmap?.asImageBitmap()
                 }
             } catch (e: Exception) {
                 Log.e("SafComicLoader", "Failed to load page $index", e)
@@ -76,6 +71,5 @@ class SafComicLoader(
     }
 
     override suspend fun clearCache() {
-        memoryCache.evictAll()
     }
 }

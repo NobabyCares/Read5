@@ -9,11 +9,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalContext
-import com.example.read5.singledata.PdfDocumentHolder
+import com.example.read5.singledata.DocumentHolder
 import java.io.File
-import java.io.FileInputStream
 import java.nio.charset.StandardCharsets
-import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 private const val TAG = "EpubReader"
@@ -25,7 +23,7 @@ fun EpubScreen() {
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
-    val epubPath = PdfDocumentHolder.currentItem?.path ?: ""
+    val epubPath = DocumentHolder.currentItem?.path ?: ""
 
     LaunchedEffect(epubPath) {
         if (epubPath.isNotEmpty()) {

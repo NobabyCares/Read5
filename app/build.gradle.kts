@@ -62,8 +62,8 @@ android {
 
 dependencies {
 
-    implementation(libs.zoomable) // 👈 就这一行
-
+// ✅ 官方 foundation（包含 zoomable）
+    implementation(libs.androidx.compose.foundation)
 
     //    pdf 库
     // PDF 查看器 —— 使用正确的第三方库
@@ -78,6 +78,7 @@ dependencies {
     *
     * */
     implementation("androidx.compose.foundation:foundation")
+
 
     // PDF 查看器
     implementation("com.github.TalbotGooday:AndroidPdfViewer:3.1.0-beta.3"){
