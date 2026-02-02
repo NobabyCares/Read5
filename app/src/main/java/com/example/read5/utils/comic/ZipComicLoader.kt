@@ -10,56 +10,69 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipFile
-import kotlin.math.abs
 
 class ZipComicLoader(
     private val zipPath: String,
-    private val pageNames: List<ComicPage>, // ZIP 内所有图片文件名（已排序）
+    private val pageNames: List<ComicPage>,
     private val cacheDir: File,
     private val scope: CoroutineScope
-): ComicLoader {
-        private val TAG = "LazyZipComicUtils"
+) : ComicLoader {
 
+    init {
+        cacheDir.mkdirs()
+    }
 
-        // 磁盘缓存：已解压的文件（避免重复 I/O）
-        private val diskCache = mutableSetOf<String>()
+    companion object {
+        private const val MAX_CACHE_BYTES = 100L * 1024 * 1024 // 100 MB
+        private const val SAFE_THRESHOLD = 90L * 1024 * 1024   // 90 MB，留缓冲
+    }
 
+    override suspend fun loadPage(index: Int): ImageBitmap? = withContext(Dispatchers.IO) {
+        if (index !in pageNames.indices) return@withContext null
 
+        val entryName = pageNames[index].name
+        val cachedFile = File(cacheDir, "page_$index.dat")
 
-        init {
-            cacheDir.mkdirs()
-        }
-
-        override suspend fun loadPage(index: Int): ImageBitmap? = withContext(Dispatchers.IO) {
-            if (index !in pageNames.indices) return@withContext null
-
-            val entryName = pageNames[index].name
-            val cachedFile = File(cacheDir, "page_$index.dat")
-
-            // ✅ 关键：直接检查文件是否存在，不再用 diskCache 集合！
-            if (!cachedFile.exists()) {
-                ZipFile(zipPath).use { zip ->
-                    val entry = zip.getEntry(entryName) ?: return@withContext null
-                    FileOutputStream(cachedFile).use { output ->
-                        zip.getInputStream(entry).copyTo(output)
-                    }
+        if (!cachedFile.exists()) {
+            ZipFile(zipPath).use { zip ->
+                val entry = zip.getEntry(entryName) ?: return@withContext null
+                FileOutputStream(cachedFile).use { output ->
+                    zip.getInputStream(entry).copyTo(output)
                 }
             }
 
-            BitmapFactory.decodeFile(cachedFile.absolutePath)?.asImageBitmap()
+            // ✅ 新增：写入后触发缓存清理
+            scope.launch(Dispatchers.IO) {
+                trimCacheIfNeeded()
+            }
         }
 
-        private fun sanitize(name: String): String {
-            return name.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+        BitmapFactory.decodeFile(cachedFile.absolutePath)?.asImageBitmap()
+    }
+
+    /**
+     * 检查缓存目录总大小，如果超过阈值，按最后修改时间 LRU 删除旧文件
+     */
+    private fun trimCacheIfNeeded() {
+        val files = cacheDir.listFiles()?.filter { it.isFile } ?: return
+        var totalSize = files.sumOf { it.length() }
+
+        if (totalSize <= SAFE_THRESHOLD) return
+
+        // 按最后修改时间升序排序（最早修改的在前 → 最久未用）
+        val sortedFiles = files.sortedBy { it.lastModified() }
+
+        for (file in sortedFiles) {
+            if (totalSize <= SAFE_THRESHOLD) break
+            val fileSize = file.length()
+            if (file.delete()) {
+                totalSize -= fileSize
+            }
         }
+    }
 
-        // 清理所有缓存（退出时调用）
-        override suspend fun clearCache() {
-            diskCache.clear()
-            cacheDir.deleteRecursively()
-        }
-
-
+    override suspend fun clearCache() {
+        cacheDir.deleteRecursively()
+    }
 }

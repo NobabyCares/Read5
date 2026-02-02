@@ -71,7 +71,7 @@ fun VirtualComicCanvas(
                 detectTransformGestures { centroid, pan, zoom, _ ->
                     // 1. 更新缩放
                     scale = (scale * zoom).coerceIn(0.5f, 5f)
-                    offsetY = (offsetY + (pan.y / scale)).coerceAtLeast(
+                    offsetY = (offsetY + pan.y ).coerceAtLeast(
                         (-(canvas.totalHeight - size.height)).toFloat() // 限制不能拉过底部
                     ).coerceAtMost(0f) // 不能拉过顶部
                 }

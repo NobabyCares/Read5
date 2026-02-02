@@ -81,9 +81,6 @@ class ComicViewModel @Inject constructor() : ViewModel() {
     // 加载指定页
     fun loadPage(index: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            if(isSaf){
-
-            }else{
                 // 假设这是在一个 suspend 函数或协程作用域中
                 val cachedBitmap = _pageCache.value[index]
                 if (cachedBitmap == null) {
@@ -98,10 +95,8 @@ class ComicViewModel @Inject constructor() : ViewModel() {
                 }
             }
         }
-    }
 
     // 清理缓存
     suspend fun clearCache() {
-        safOrZipLoader.clearCache()
     }
 }

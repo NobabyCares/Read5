@@ -16,7 +16,11 @@ import java.io.IOException
 import java.io.Serializable
 import java.util.zip.ZipFile
 
-
+/*
+    这里没必要构建出class, 因为这个函数基本上只会被使用一次, 构建类多余
+*
+*
+* */
 //构建虚拟页面zip格式
 fun ZipbuilderVirtualCanvas(pages: List<ComicPage>): VirtualCanvas {
     var cumulativeTop = 0
