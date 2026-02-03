@@ -28,30 +28,11 @@ fun StoreHouseInputDialog(
     val scope = rememberCoroutineScope()
 
 
-    var uriPath: Uri? by remember { mutableStateOf(null) }
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("") }
+    // ✅ 正确：带状态、带类型、能触发重组
+    var content by remember { mutableStateOf<List<String>>(emptyList()) }
 
-
-    // SAF 目录选择器
-    // ✅ 正确方式：使用 OpenDocumentTree contract（无需手动加 flags！）
-    val directoryPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree(),
-        onResult = { uri: Uri? ->
-            if (uri != null) {
-                // 👇 关键：持久化权限（这里才加 flags！）
-                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                try {
-                    context.contentResolver.takePersistableUriPermission(uri, flags)
-                    uriPath = uri
-                } catch (e: SecurityException) {
-                    // 权限被拒绝（理论上不该发生，但防御性编程）
-                    e.printStackTrace()
-                }
-            }
-        }
-    )
 
 
     AlertDialog(
@@ -69,11 +50,11 @@ fun StoreHouseInputDialog(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            directoryPicker.launch(null) // 弹出系统目录选择器
+                            content = content + ""
                         },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("选择目录")
+                        Text("添加目录")
                     }
 
                     OutlinedButton(
@@ -112,6 +93,19 @@ fun StoreHouseInputDialog(
                     label = { Text("类型（如：pdf,epub,mobi,awz3）") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // 动态 TextField 列表
+                for (i in content.indices) {
+                    OutlinedTextField(
+                        value = content[i],
+                        onValueChange = { newText ->
+                            // ✅ 更新第 i 项
+                            content = content.toMutableList().apply { this[i] = newText }.toList()
+                        },
+                        label = { Text("目录 ${i + 1}") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
@@ -120,7 +114,7 @@ fun StoreHouseInputDialog(
                     if (name.isNotBlank()) {
                         scope.launch {
                             // 🚀 在后台执行导入
-                            importViewModel.importStoreHouse(context, name, type, uriPath)
+                            importViewModel.importStoreHouse(context, name, type, content)
                             // 导入完成后显示 Snackbar
 //                            scaffoldState.snackbarHostState.showSnackbar("书库导入完成！")
                             onDismiss()
@@ -139,3 +133,4 @@ fun StoreHouseInputDialog(
         }
     )
 }
+

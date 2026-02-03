@@ -51,9 +51,7 @@ class ComicViewModel @Inject constructor() : ViewModel() {
         // ✅ 关键：切换漫画时，清空旧缓存！
         _pageCache.value = emptyMap()
 
-        if(path.startsWith("content://")){
-            isSaf = true;
-        }
+
         loadFile = SafFolderLoad(context, path)
         val sortedPages = loadFile.loadComic().sortedWith(
             compareBy(NaturalOrderComparator.naturalOrderComparator) { it.name }

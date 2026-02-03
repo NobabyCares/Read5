@@ -5,9 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
-import com.example.read5.utils.FileScanner
 import com.example.read5.repository.ItemInfoRepository
 import com.example.read5.repository.StoreHouseRepository
+import com.example.read5.utils.FileScanner2
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,22 +18,16 @@ class ImportViewModel @Inject constructor(
     private val storeHouseViewModel: StoreHouseRepository, // ✅ 注入 Repository
     private val itemInfoViewModel: ItemInfoRepository        // ✅ 注入 Repository
 ) : ViewModel() {
-
     suspend fun importStoreHouse(
         context: Context,
         name: String,
         type: String,
-        uriPath: Uri?
+        contents: List<String>
     ): Long = withContext(Dispatchers.IO) {
         val storeHouse = StoreHouse(name = name, type = type)
         val id = storeHouseViewModel.insert(storeHouse)
 
-        val allBooks = mutableListOf<ItemInfo>()
-
-        // SAF 漫画扫描（已在 IO 线程）
-        if (uriPath != null) {
-            allBooks.addAll(FileScanner.findComicBooksBySaf(context, uriPath, id))
-        }
+        var allBooks = mutableListOf<ItemInfo>()
 
         // 传统文件扫描
         val extensions = type.split(",")
@@ -41,8 +35,8 @@ class ImportViewModel @Inject constructor(
             .filter { it.isNotEmpty() }
             .toSet()
 
-        if (extensions.isNotEmpty()) {
-            allBooks.addAll(FileScanner.findBooksByExtensions(extensions, id))
+        if (extensions.isNotEmpty() || contents.isNotEmpty()) {
+            allBooks = FileScanner2.loadFile(extensions, id,  contents).toMutableList()
         }
 
         if (allBooks.isNotEmpty()) {

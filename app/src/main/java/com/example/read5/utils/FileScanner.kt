@@ -1,3 +1,4 @@
+/*
 package com.example.read5.utils
 
 import android.content.Context
@@ -17,6 +18,7 @@ object FileScanner {
 
     private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "bmp", "gif")
 
+//    这个时查找啊指定后缀的文件的
     fun findBooksByExtensions(
         extensions: Set<String> = setOf("epub", "mobi", "pdf"),
         category: Long
@@ -24,6 +26,7 @@ object FileScanner {
         val result = mutableListOf<ItemInfo>()
         val queue = ArrayDeque<File>()
         val root = File(ROOT_PATH)
+
         if (!root.exists() || !root.isDirectory) return result
         root.listFiles()?.forEach { queue.add(it) }
         val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -51,7 +54,7 @@ object FileScanner {
         }
         return result
     }
-
+//获取文件后缀的
     private fun getExtension(filename: String): String {
         val lastDotIndex = filename.lastIndexOf('.')
         return if (lastDotIndex > 0 && lastDotIndex < filename.length - 1) {
@@ -60,7 +63,7 @@ object FileScanner {
             ""
         }
     }
-
+//计算hash
     private fun calculateContentBasedHash(file: File): String {
         return try {
             val fileSize = file.length()
@@ -95,6 +98,8 @@ object FileScanner {
                 .joinToString("") { "%02x".format(it) }
         }
     }
+
+
     // ✅ 修复版：SAF 漫画扫描（仅改动路径存储格式，保留 hash）
     fun findComicBooksBySaf(
         context: Context,
@@ -285,4 +290,4 @@ object FileScanner {
         val displayName: String?,
         val mimeType: String?
     )
-}
+}*/
