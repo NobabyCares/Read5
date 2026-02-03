@@ -12,7 +12,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipFile
 
-class ZipComicLoader(
+class ComicLoaderZip(
     private val zipPath: String,
     private val pageNames: List<ComicPage>,
     private val cacheDir: File,

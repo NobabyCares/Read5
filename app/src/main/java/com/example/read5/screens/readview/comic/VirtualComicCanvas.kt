@@ -31,6 +31,7 @@ import com.example.read5.bean.ComicPage
 import com.example.read5.bean.PageLayout
 import com.example.read5.bean.VirtualCanvas
 import com.example.read5.singledata.DocumentHolder
+
 import com.example.read5.viewmodel.comic.ComicViewModel
 
 @Composable
@@ -72,14 +73,14 @@ fun VirtualComicCanvas(
                     // 1. 更新缩放
                     scale = (scale * zoom).coerceIn(1f, 5f)
 
+                    // 关键修改：根据当前缩放比例调整 pan.y
+                    // 当放大时，手指移动的距离应该被放大，这样才会跟手
+                    val adjustedPanY = pan.y / scale
 
-
-                    offsetY = (offsetY + pan.y).coerceAtLeast(
-                        (-(canvas.totalHeight - size.height)).toFloat() // 限制不能拉过底部
-                    ).coerceAtMost(0f) // 不能拉过顶部
-
+                    offsetY = (offsetY + adjustedPanY).coerceAtLeast(
+                        (-(canvas.totalHeight - size.height)).toFloat()
+                    ).coerceAtMost(0f)
                 }
-
             }
 
     ) {
