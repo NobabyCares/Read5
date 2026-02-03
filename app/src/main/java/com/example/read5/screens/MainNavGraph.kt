@@ -48,22 +48,8 @@ fun MainNavGraph(
         }
 
         composable("pdf_view") {
-//            ComicScreen()
             VirtualComicCanvas()
         }
 
-      /*  composable(
-            route = "pdf_view/{filePath}",
-            arguments = listOf(
-                navArgument("filePath") {
-                    type = NavType.StringType
-                    nullable = false
-                }
-            )
-        ) { backStackEntry ->
-            var filePath = backStackEntry.arguments?.getString("filePath")
-            filePath = Uri.decode(filePath)
-            PdfView(path = filePath)
-        }*/
     }
 }

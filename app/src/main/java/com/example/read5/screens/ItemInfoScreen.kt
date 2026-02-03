@@ -1,6 +1,5 @@
 package com.example.read5.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +23,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,13 +34,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
 import com.example.read5.bean.ItemInfo
-import com.example.read5.utils.ComicCoverExtractor
-import com.example.read5.utils.EpubCoverExtractor
-import com.example.read5.utils.PdfCoverGenerator
+import com.example.read5.utils.coverextractor.ComicCoverExtractor
+import com.example.read5.utils.coverextractor.EpubCoverExtractor
+import com.example.read5.utils.coverextractor.PdfCoverGenerator
+import com.example.read5.viewmodel.CoverExtractorViewModel
 
 //显示数据项和封面生成
 @Composable
@@ -53,11 +51,16 @@ fun ItemInfoScreen(
 ) {
     val context = LocalContext.current
 
+    val coverExtractorViewModel: CoverExtractorViewModel = hiltViewModel()
+
+    coverExtractorViewModel.initCoverExtractor(item.fileType)
+
+
     // 检查封面是否已存在（PDF 或 EPUB）
     var isCoverReady by remember {
         mutableStateOf(
-            PdfCoverGenerator.hasCover(context, item.hash) // PDF 封面
             // 注意：EPUB 封面也存为同名文件，所以 hasCover 能通用
+            coverExtractorViewModel.hasCover(item.hash) // PDF 封面
         )
     }
 
@@ -65,30 +68,8 @@ fun ItemInfoScreen(
     LaunchedEffect(item.hash) {
         if (isCoverReady) return@LaunchedEffect
 
-        when (item.fileType.lowercase()) {
-            "pdf" -> {
-                val success = PdfCoverGenerator.generatePdfCover(context, item.path, item.hash)
-                if (success) isCoverReady = true
-            }
-            "epub" -> {
-                // 提取 EPUB 封面
-                val bitmap = EpubCoverExtractor.extractCover(item.path)
-                if (bitmap != null) {
-                    // 保存为与 PDF 相同的格式（WebP/PNG）
-                    val saved = PdfCoverGenerator.saveCoverBitmap(context, item.hash, bitmap)
-                    bitmap.recycle()
-                    if (saved) isCoverReady = true
-                }
-            }
-            "folder", "zip", "cbz", "comic" -> {
-                val bitmap = ComicCoverExtractor.extractCover(context, item.path)
-                if (bitmap != null) {
-                    val saved = PdfCoverGenerator.saveCoverBitmap(context, item.hash, bitmap)
-                    bitmap.recycle()
-                    if (saved) isCoverReady = true
-                }
-            }
-            // 可扩展 azw3 等
+        if(coverExtractorViewModel.generateCover(item.path, item.hash)){
+            isCoverReady = true
         }
     }
 
@@ -105,7 +86,7 @@ fun ItemInfoScreen(
         ) {
             if (isCoverReady) {
                 // ✅ 加载已生成的封面（PDF/EPUB 共用）
-                val coverPath = PdfCoverGenerator.getCoverFile(context, item.hash).absolutePath
+                val coverPath = coverExtractorViewModel.getCoverFile(item.hash).absolutePath
                 AsyncImage(
                     model = "file://$coverPath",
                     contentDescription = "Book cover",

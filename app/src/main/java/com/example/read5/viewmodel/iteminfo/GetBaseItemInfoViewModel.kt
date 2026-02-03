@@ -1,18 +1,12 @@
-package com.example.read5.viewmodel
+package com.example.read5.viewmodel.iteminfo
 
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.PagingData
 import androidx.paging.filter
 import com.example.read5.bean.ItemInfo
-import com.example.read5.bean.StoreHouse
 import com.example.read5.repository.ItemInfoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -30,14 +24,16 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
+/*
+* 这里是 ItemInfo Bean 数据库操作的ViewModel
+* */
 @HiltViewModel
-class ItemInfoViewModel @Inject constructor(
+class GetBaseItemInfoViewModel @Inject constructor(
     private val itemInfoRepository: ItemInfoRepository
 ) : ViewModel() {
 
     // 当前筛选的 category（null = 全部）
-    private val _currentCategory = MutableStateFlow<Long?>(null)
+    private val _currentCategory = MutableStateFlow<Long>(1L)
 
     // 当前展开的 StoreHouse 的 id，初始为 -1（表示无展开）
     private val _expandedStoreId = mutableStateOf<Long?>(null)
@@ -59,7 +55,7 @@ class ItemInfoViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = itemInfoRepository.getItemsPager(null)
+            initialValue = itemInfoRepository.getItemsPager(1L)
         )
 
     val filteredPagedItems: StateFlow<Flow<PagingData<ItemInfo>>> =
@@ -108,7 +104,7 @@ class ItemInfoViewModel @Inject constructor(
 
 
     // 切换分类（或设为 null 查看全部）
-    fun setCategory(categoryId: Long?) {
+    fun setCategory(categoryId: Long = 1L) {
         _currentCategory.value = categoryId
     }
 

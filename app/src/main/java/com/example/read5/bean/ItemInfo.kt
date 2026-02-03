@@ -25,6 +25,7 @@ import com.example.read5.global.GlobalData
 )
 data class ItemInfo(
     var name: String = "",
+    var secondName: String = "",
     var author: String = "",
     var path: String = "",
 //如何去获取这个值?

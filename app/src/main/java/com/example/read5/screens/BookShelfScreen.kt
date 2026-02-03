@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.MaterialTheme
@@ -28,9 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.example.read5.viewmodel.ItemInfoViewModel
-import com.example.read5.viewmodel.StoreHouseViewModel
+import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 import com.example.read5.singledata.DocumentHolder
+import com.example.read5.viewmodel.iteminfo.GetBaseItemInfoViewModel
 
 // BookShelfScreen.kt
 // ——————— 书架页面 ———————
@@ -39,7 +39,7 @@ fun BookShelfScreen(navController: NavHostController) {
 
     val TAG: String = "BookShelfScreen"
     val storeHouseModel: StoreHouseViewModel = hiltViewModel()
-    val itemInfoViewModel: ItemInfoViewModel = hiltViewModel()
+    val itemInfoViewModel: GetBaseItemInfoViewModel = hiltViewModel()
 
 
 
@@ -76,22 +76,37 @@ fun BookShelfScreen(navController: NavHostController) {
             modifier = Modifier
         )
 
-//导入栏
-        Row {
-            Text(
-                text = "书城",
-                modifier = Modifier.align(Alignment.CenterVertically),
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.weight(1f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 16.dp), // 添加左右内边距
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // 左侧：图标 + 标题
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 如果需要可以添加图标
+                // Icon(imageVector = Icons.Default.Book, contentDescription = "书城")
+                Text(
+                    text = "书城",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // 右侧：导入按钮
             Text(
                 text = "导入",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .align(Alignment.CenterVertically)
-                    .clickable {
-                        showImportDialog = true // ✅ 点击时显示弹窗
-                    },
-                fontWeight = FontWeight.Bold
+                    .clickable { showImportDialog = true }
+                    .padding(horizontal = 12.dp, vertical = 8.dp) // 增加点击区域
             )
         }
 
@@ -132,8 +147,5 @@ fun BookShelfScreen(navController: NavHostController) {
             onDismiss = { showImportDialog = false },
         )
     }
-
-
-
 
 }

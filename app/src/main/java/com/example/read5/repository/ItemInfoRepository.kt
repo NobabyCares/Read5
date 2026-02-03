@@ -12,7 +12,7 @@ import javax.inject.Inject
 interface ItemInfoRepository {
     // ❌ 移除旧的 getAll()、searchByCategory()
     // ✅ 新增：返回可参数化的分页流
-    fun getItemsPager(categoryId: Long? = null): Flow<PagingData<ItemInfo>>
+    fun getItemsPager(categoryId: Long): Flow<PagingData<ItemInfo>>
 
      fun searchByName(name: String): Flow<PagingData<ItemInfo>>
 
@@ -24,14 +24,14 @@ class ItemInfoRepositoryImpl @Inject constructor(
     private val itemInfoDao: ItemInfoDao
 ) : ItemInfoRepository {
 
-    override fun getItemsPager(categoryId: Long?): Flow<PagingData<ItemInfo>> {
+    override fun getItemsPager(categoryId: Long): Flow<PagingData<ItemInfo>> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
                 enablePlaceholders = false
             ),
             pagingSourceFactory = {
-                if (categoryId == null) {
+                if (categoryId == 1L ) {
                     itemInfoDao.getAllPaged()
                 } else {
                     itemInfoDao.getPagedByCategory(categoryId)

@@ -1,14 +1,28 @@
-package com.example.read5.utils
+package com.example.read5.utils.coverextractor
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.zip.ZipFile
 
-object EpubCoverExtractor {
+class EpubCoverExtractor : CoverExtractor{
+    override suspend fun extractCover(path: String, coverFile: File): Boolean {
+        // 提取 EPUB 封面
+        val bitmap = extractCover(path)
+        if (bitmap != null) {
+            // 保存为与 PDF 相同的格式（WebP/PNG）
+            val saved = CoverExtractorUitils.saveCoverBitmap(bitmap = bitmap, coverFile)
+            bitmap.recycle()
+            return true
+        }
+        return false
+    }
 
-    suspend fun extractCover(epubPath: String): Bitmap? = withContext(Dispatchers.IO) {
+
+
+    private suspend fun extractCover(epubPath: String): Bitmap? = withContext(Dispatchers.IO) {
         var result: Bitmap? = null // 👈 关键：用变量收集结果
         try {
             ZipFile(epubPath).use { zip ->
@@ -119,4 +133,6 @@ object EpubCoverExtractor {
             }
         }
     }
+
+
 }

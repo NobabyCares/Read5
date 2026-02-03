@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.read5.utils.hasAllFilesPermission
 import com.example.read5.utils.requestAllFilesPermission
-import com.example.read5.viewmodel.ImportViewModel
+import com.example.read5.viewmodel.ImportFileViewModel
 import kotlinx.coroutines.launch
 //导入细节
 @Composable
@@ -23,7 +23,7 @@ fun StoreHouseInputDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val importViewModel: ImportViewModel = hiltViewModel()
+    val importViewModel: ImportFileViewModel = hiltViewModel()
     // ✅ 用 coroutineScope 启动后台任务
     val scope = rememberCoroutineScope()
 
@@ -33,10 +33,16 @@ fun StoreHouseInputDialog(
     // ✅ 正确：带状态、带类型、能触发重组
     var content by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // ✅ 控制加载状态
+    var isImporting by remember { mutableStateOf(false) }
 
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (!isImporting) {
+                onDismiss()
+            }
+        },
         title = { Text("添加书库") },
         text = {
             Column(
@@ -52,7 +58,8 @@ fun StoreHouseInputDialog(
                         onClick = {
                             content = content + ""
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = !isImporting
                     ) {
                         Text("添加目录")
                     }
@@ -67,11 +74,10 @@ fun StoreHouseInputDialog(
                                 } else {
                                     // 已有权限，可直接扫描文件
                                 }
-                            } else {
-
                             }
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = !isImporting
                     ) {
                         Text("授予权限")
                     }
@@ -84,14 +90,17 @@ fun StoreHouseInputDialog(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("书库名称") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isImporting
+
                 )
 
                 OutlinedTextField(
                     value = type,
                     onValueChange = { type = it },
                     label = { Text("类型（如：pdf,epub,mobi,awz3）") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isImporting
                 )
 
                 // 动态 TextField 列表
@@ -103,27 +112,55 @@ fun StoreHouseInputDialog(
                             content = content.toMutableList().apply { this[i] = newText }.toList()
                         },
                         label = { Text("目录 ${i + 1}") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isImporting
                     )
+                }
+
+                // ✅ 可选：在底部加一行加载提示（更明显）
+                if (isImporting) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("正在导入书库...", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    if (name.isNotBlank()) {
+                    if (name.isNotBlank() && !isImporting) {
+                        isImporting = true
                         scope.launch {
-                            // 🚀 在后台执行导入
-                            importViewModel.importStoreHouse(context, name, type, content)
-                            // 导入完成后显示 Snackbar
-//                            scaffoldState.snackbarHostState.showSnackbar("书库导入完成！")
-                            onDismiss()
+                            try {
+                                importViewModel.importStoreHouse(context, name, type, content)
+                            } catch (e: Exception) {
+                                // 可选：记录日志或后续加 Toast
+                            } finally {
+                                isImporting = false
+                                onDismiss()
+                            }
                         }
                     }
                 },
                 enabled = name.isNotBlank()
             ){
-                Text("保存")
+                if (isImporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("导入")
+                }
             }
         },
         dismissButton = {
@@ -133,4 +170,5 @@ fun StoreHouseInputDialog(
         }
     )
 }
+
 

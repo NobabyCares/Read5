@@ -4,12 +4,16 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
 import com.example.read5.bean.Tag
 import com.example.read5.dao.ItemInfoDao
 import com.example.read5.dao.StoreHouseDao
 import com.example.read5.dao.TagDao
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 @Database(
@@ -32,6 +36,11 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        // 在 Companion object 或单独文件中定义
+        val DEFAULT_STOREHOUSES = listOf(
+            StoreHouse(name = "全部", type = ""),
+        )
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -39,8 +48,20 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "read_app_database.db" // 数据库文件名
                 )
+                    .addCallback(object : Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            // 使用 IO 线程插入默认数据
+                            INSTANCE?.let { database ->
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    database.storeHouseDao().insertAll(DEFAULT_STOREHOUSES)
+                                }
+                            }
+                        }
+                    })
                     .setJournalMode(JournalMode.TRUNCATE)
                     .build()
+
                 INSTANCE = instance
                 instance
             }

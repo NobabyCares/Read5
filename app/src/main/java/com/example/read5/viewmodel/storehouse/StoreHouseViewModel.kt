@@ -1,4 +1,4 @@
-package com.example.read5.viewmodel
+package com.example.read5.viewmodel.storehouse
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
