@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.read5.bean.VirtualCanvas
+import com.example.read5.cache.ComicPageCache
 import com.example.read5.utils.comic.BuilderVirtualCanvas
 import com.example.read5.utils.comic.ComicLoader
 import com.example.read5.utils.comic.ComicLoaderFolder
@@ -24,12 +25,14 @@ class ComicViewModel @Inject constructor() : ViewModel() {
 
     val TAG = "ComicViewModel"
 
-//缓存
-    private val _pageCache = MutableStateFlow<Map<Int, ImageBitmap?>>(mapOf())
-    val pageCache: StateFlow<Map<Int, ImageBitmap?>> = _pageCache
+    // ✅ 直接缓存 <index, bitmap>，用 immutable map 触发重组
+    private val _pageCache = MutableStateFlow<Map<Int, ImageBitmap>>(emptyMap())
+    val pageCache: StateFlow<Map<Int, ImageBitmap>> = _pageCache
+
 
     private val _virtualCanvas = MutableStateFlow<VirtualCanvas?>(null)
     val virtualCanvas: StateFlow<VirtualCanvas?> = _virtualCanvas
+
 
 
     // 内部 LazyZipPageLoader 实例
@@ -40,6 +43,7 @@ class ComicViewModel @Inject constructor() : ViewModel() {
     // 初始化 Loader
     suspend fun initLoader(context: Context, path: String) {
         // ✅ 关键：切换漫画时，清空旧缓存！
+        // ✅ 1. 清空旧缓存（关键！）
         _pageCache.value = emptyMap()
 
         loadFile = ZipOrFolderLoad(context, path)
@@ -61,23 +65,28 @@ class ComicViewModel @Inject constructor() : ViewModel() {
         Log.d(TAG, " initLoader_success")
     }
 
-    // 加载指定页
+    // 加载指定页（外部调用）
     fun loadPage(index: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-                // 假设这是在一个 suspend 函数或协程作用域中
-                val cachedBitmap = _pageCache.value[index]
-                if (cachedBitmap == null) {
-                    // 缓存未命中，加载并填充
-                    val bitmap = withContext(Dispatchers.IO) {
-                        folderOrZipLoader.loadPage(index)
-                    }
-                    if (bitmap != null) {
-                        // 更新缓存（在主线程）
-                        _pageCache.value += (index to bitmap)
-                    }
+            val bitmap = folderOrZipLoader.loadPage(index)
+            if (bitmap != null) {
+                // 回到主线程更新 StateFlow
+                viewModelScope.launch(Dispatchers.Main) {
+                    _pageCache.value += mapOf(index to bitmap)
                 }
             }
         }
+    }
+
+    // 获取 bitmap（供 Composable 使用）
+    fun getPageBitmap(pageIndex: Int): ImageBitmap? {
+        val bitmap =_pageCache.value[pageIndex]
+        if(bitmap == null){
+            loadPage(pageIndex)
+        }
+        return _pageCache.value[pageIndex]
+    }
+
 
     // 清理缓存
     suspend fun clearCache() {

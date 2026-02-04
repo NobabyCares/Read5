@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.read5.bean.StoreHouse
-import com.example.read5.viewmodel.iteminfo.GetBaseItemInfoViewModel
+import com.example.read5.viewmodel.storehouse.GetBaseItemInfoViewModel
 //仓库选择组件
 @Composable
 fun StoreHouseSelector(

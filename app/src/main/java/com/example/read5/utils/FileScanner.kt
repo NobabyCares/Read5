@@ -23,9 +23,7 @@ object FileScanner {
         }
         for (itemInfo in content){
             val temp = findComicBooksByFolder(path = itemInfo, category = category)
-            if (temp != null){
-                result = result.plus(temp).toMutableList()
-            }
+            result = result.plus(temp).toMutableList()
         }
         return result
     }

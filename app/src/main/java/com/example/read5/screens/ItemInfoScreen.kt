@@ -2,6 +2,7 @@ package com.example.read5.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,10 +39,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.read5.bean.ItemInfo
+import com.example.read5.bean.ItemKey
 import com.example.read5.utils.coverextractor.ComicCoverExtractor
 import com.example.read5.utils.coverextractor.EpubCoverExtractor
 import com.example.read5.utils.coverextractor.PdfCoverGenerator
 import com.example.read5.viewmodel.CoverExtractorViewModel
+import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 
 //显示数据项和封面生成
 @Composable
@@ -49,11 +53,18 @@ fun ItemInfoScreen(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-
+//封面生成
     val coverExtractorViewModel: CoverExtractorViewModel = hiltViewModel()
 
-    coverExtractorViewModel.initCoverExtractor(item.fileType)
+//    数据库跟新
+    val updateItemInfoViewModel: UpdateItemInfo = hiltViewModel()
+
+    val key: ItemKey = ItemKey(hash = item.hash, path = item.path, androidId = item.androidId)
+
+    var isCollect by remember {
+        mutableStateOf(item.isCollect)
+    }
+
 
 
     // 检查封面是否已存在（PDF 或 EPUB）
@@ -67,7 +78,7 @@ fun ItemInfoScreen(
     // 🔑 按需生成封面（PDF 或 EPUB）
     LaunchedEffect(item.hash) {
         if (isCoverReady) return@LaunchedEffect
-
+        coverExtractorViewModel.initCoverExtractor(item.fileType)
         if(coverExtractorViewModel.generateCover(item.path, item.hash)){
             isCoverReady = true
         }
@@ -99,18 +110,24 @@ fun ItemInfoScreen(
             }
 
             // 收藏图标
-            if (item.isCollect) {
                 Icon(
                     imageVector = Icons.Filled.Favorite,
                     contentDescription = "Collected",
-                    tint = Color.Yellow,
+                    tint = if (isCollect) Color.Red else Color.Gray,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = (-4).dp, y = 4.dp)
                         .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
                         .padding(2.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = ripple(color = Color.White.copy(alpha = 0.3f))
+                        ) {
+                            isCollect = !isCollect
+                            updateItemInfoViewModel.updateCollectStatus(key, isCollect)
+                        }
+
                 )
-            }
         }
 
         // ===== 书名、作者等（保持不变）=====

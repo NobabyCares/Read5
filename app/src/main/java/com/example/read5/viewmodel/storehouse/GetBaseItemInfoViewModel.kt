@@ -1,4 +1,4 @@
-package com.example.read5.viewmodel.iteminfo
+package com.example.read5.viewmodel.storehouse
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -48,7 +48,7 @@ class GetBaseItemInfoViewModel @Inject constructor(
 
 
     // ✅ 核心：每当 category 变化，就发射新的 PagingData 流
-    val pagedItems: StateFlow<Flow<PagingData<ItemInfo>>> = _currentCategory
+    private val pagedItems: StateFlow<Flow<PagingData<ItemInfo>>> = _currentCategory
         .map { categoryId ->
             itemInfoRepository.getItemsPager(categoryId)
         }

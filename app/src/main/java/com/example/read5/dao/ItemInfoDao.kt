@@ -8,6 +8,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.read5.bean.ItemInfo
+import com.example.read5.bean.ItemKey
 import com.example.read5.bean.StoreHouse
 import kotlinx.coroutines.flow.Flow
 
@@ -32,5 +33,13 @@ interface ItemInfoDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(itemInfo: List<ItemInfo>): LongArray
+
+    // 只更新收藏状态
+    @Query("UPDATE item_info_table SET isCollect = :isCollect WHERE path = :path AND hash = :hash AND androidId = :androidId")
+    suspend fun updateCollectStatus(path: String, hash: String, androidId: String, isCollect: Boolean)
+
+    // 只更新阅读进度
+    @Query("UPDATE item_info_table SET currentPage = :currentPage WHERE path = :path AND hash = :hash AND androidId = :androidId")
+    suspend fun updateCurrentPage(path: String, hash: String, androidId: String, currentPage: Int)
 
 }

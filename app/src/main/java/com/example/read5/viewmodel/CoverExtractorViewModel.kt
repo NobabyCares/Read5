@@ -14,13 +14,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CoverExtractorViewModel @Inject constructor(
-    @ApplicationContext private val c: Context  // ✅ 明确指定要 Application Contextc
+    @ApplicationContext private val context: Context  // ✅ 明确指定要 Application Contextc
 ): ViewModel() {
+    private val TAG = "CoverExtractorViewModel"
+
     private val COVER_DIR_NAME = "covers"
 
     private lateinit var coverExtractor: CoverExtractor
 
-    val context = c
 
     private val dir: File = run {
         val baseDir = context.getExternalFilesDir(null) ?: context.filesDir

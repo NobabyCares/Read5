@@ -20,7 +20,7 @@ fun ConfigScreen() {
 
     Button(onClick = {
         // 修改配置并保存
-        config = Config(recentStoreHouse = 123L, recentItem = listOf(1L, 2L))
+        config = Config(recentStoreHouse = 123L, history = listOf(1L, 2L))
         saveConfig(context, config) // 👈 传入 context
     }) {
         Text("保存配置")

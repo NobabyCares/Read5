@@ -30,7 +30,7 @@ import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 import com.example.read5.singledata.DocumentHolder
-import com.example.read5.viewmodel.iteminfo.GetBaseItemInfoViewModel
+import com.example.read5.viewmodel.storehouse.GetBaseItemInfoViewModel
 
 // BookShelfScreen.kt
 // ——————— 书架页面 ———————

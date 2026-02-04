@@ -3,7 +3,9 @@ package com.example.read5.repository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.room.Query
 import com.example.read5.bean.ItemInfo
+import com.example.read5.bean.ItemKey
 import com.example.read5.bean.StoreHouse
 import com.example.read5.dao.ItemInfoDao
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,11 @@ interface ItemInfoRepository {
 
     suspend fun insert(itemInfo: ItemInfo): Long
     suspend fun insert(item: List<ItemInfo>)
+
+    suspend fun updateCollectStatus(key: ItemKey, isCollect: Boolean)
+
+    // 只更新阅读进度
+    suspend fun updateCurrentPage(key: ItemKey, currentPage: Int)
 }
 
 class ItemInfoRepositoryImpl @Inject constructor(
@@ -58,6 +65,14 @@ class ItemInfoRepositoryImpl @Inject constructor(
 
     override suspend fun insert(item: List<ItemInfo>) {
         itemInfoDao.insertAll(item)
+    }
+
+    override suspend fun updateCollectStatus(key: ItemKey, isCollect: Boolean) {
+        itemInfoDao.updateCollectStatus(path = key.path, hash = key.hash, androidId = key.androidId, isCollect)
+    }
+
+    override suspend fun updateCurrentPage(key: ItemKey, currentPage: Int) {
+        itemInfoDao.updateCurrentPage(path = key.path, hash = key.hash, androidId = key.androidId, currentPage)
     }
 }
 

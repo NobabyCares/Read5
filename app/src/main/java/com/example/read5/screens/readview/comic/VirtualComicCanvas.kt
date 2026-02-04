@@ -3,12 +3,25 @@ package com.example.read5.screens.readview.comic
 import android.util.Log
 import androidx.compose.animation.SharedTransitionScope.PlaceHolderSize.Companion.contentSize
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,11 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.read5.bean.ComicPage
 import com.example.read5.bean.PageLayout
@@ -33,6 +48,7 @@ import com.example.read5.bean.VirtualCanvas
 import com.example.read5.singledata.DocumentHolder
 
 import com.example.read5.viewmodel.comic.ComicViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun VirtualComicCanvas(
@@ -41,20 +57,40 @@ fun VirtualComicCanvas(
     val TAG = "VirtualComicCanvas"
     val path = DocumentHolder.currentItem?.path
     val context = LocalContext.current
+
+
     val comicViewModel: ComicViewModel = hiltViewModel()
+//    虚拟画布生成
     val virtualCanvas by comicViewModel.virtualCanvas.collectAsState()
+//    缓存
     val pageCache by comicViewModel.pageCache.collectAsState()
 
 //    上下偏移
     var offsetY by remember { mutableStateOf(0f) }
 //    缩放
     var scale by remember { mutableStateOf(1f) }
+    // 添加：用于记录菜单是否可见的状态
+    var menuVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(path) {
         if (path != null) {
             comicViewModel.initLoader(context, path)
         }
     }
+
+/*    // ✅ 新增：防抖保存阅读进度
+    LaunchedEffect(offsetY, path) {
+        if (path != null && virtualCanvas != null) {
+            // 防抖：等待 1 秒无变化再保存
+            delay(1000)
+            // 再次检查是否还是同一个 path（避免旧任务覆盖新书）
+            if (DocumentHolder.currentItem?.path == path) {
+                comicViewModel.saveReadingProgress(path, offsetY)
+                Log.d("VirtualComicCanvas", "Saved reading progress: $offsetY for $path")
+            }
+        }
+    }*/
+
 
     if (virtualCanvas == null) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -64,6 +100,10 @@ fun VirtualComicCanvas(
     }
 
     val canvas = virtualCanvas!!
+
+
+
+
     // ✅ 正确方式：用手势控制 offsetY
     Box(
         modifier = modifier
@@ -73,20 +113,36 @@ fun VirtualComicCanvas(
                     // 1. 更新缩放
                     scale = (scale * zoom).coerceIn(1f, 5f)
 
-                    // 关键修改：根据当前缩放比例调整 pan.y
-                    // 当放大时，手指移动的距离应该被放大，这样才会跟手
-                    val adjustedPanY = pan.y / scale
 
-                    offsetY = (offsetY + adjustedPanY).coerceAtLeast(
-                        (-(canvas.totalHeight - size.height)).toFloat()
-                    ).coerceAtMost(0f)
+                    // 控制缩放范围
+                    scale = scale.coerceIn(0.5f, 5f) // 根据需求调整最小最大值
+
+                    // 调整平移距离
+                    offsetY += pan.y / scale * 1.5f
+
+                    // 防止画布超出边界
+                    val maxOffset = (canvas.totalHeight * scale - size.height).coerceAtLeast(0f)
+                    offsetY = offsetY.coerceIn(-maxOffset, 0f)
                 }
+            }
+            .pointerInput(Unit) {
+                // 单独监听点击（不会干扰上面的 transform）
+                detectTapGestures(
+                    onTap = {
+                        menuVisible = !menuVisible
+                    },
+                    // 可选：长按也触发
+                    onLongPress = {
+                        menuVisible = true
+                    }
+                )
             }
 
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             // 计算可见区域（Y 范围）
             val visibleTop = -offsetY.toInt()
+            Log.d(TAG, "offsetY: $offsetY.toInt(),")
             val visibleBottom = visibleTop + size.height.toInt()
 
             // 筛选可见页面
@@ -94,13 +150,10 @@ fun VirtualComicCanvas(
                 page.bottom > visibleTop && page.top < visibleBottom
             }
 
-            // 触发未加载页面的加载
             visiblePages.forEach { page ->
-                if (pageCache[page.index] == null) {
-                    // 启动加载（ViewModel 内部处理协程）
-                    comicViewModel.loadPage(page.index)
-                }
+                comicViewModel.getPageBitmap(page.index)
             }
+
 
             // 绘制每一页
             visiblePages.forEach { page ->
@@ -114,6 +167,7 @@ fun VirtualComicCanvas(
                     // 纵向位置也需要根据缩放进行调整，这里假设 offsetY 已经考虑了缩放因素
                     val drawY = ((page.top + offsetY) * scale).toInt()
 
+
                     drawImage(
                         image = bitmap,
                         dstOffset = IntOffset(drawX, drawY),
@@ -121,6 +175,19 @@ fun VirtualComicCanvas(
                     )
                 }
             }
+
         }
+        // 菜单
+        if (menuVisible) {
+            TopReadingMenu(
+                onDismiss = { menuVisible = false },
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+            ButtomReadingMenu(
+                onDismiss = { menuVisible = false },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
+
     }
 }
