@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.example.read5.global.GlobalData
+import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.MainBookApp
 import com.example.read5.ui.theme.Read5Theme
 import com.example.read5.utils.ScreenshotUtils
@@ -66,7 +67,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        GlobalData.initialize(this) // ✅ 正确时机
+        // AndroidId初始化
+        GlobalData.initialize(this)
+        //全局设置初始化
+        GlobalSettings.init(this)
         setContent {
             Read5Theme {
                 MainBookApp()

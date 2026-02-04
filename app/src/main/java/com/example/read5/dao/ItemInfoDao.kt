@@ -6,6 +6,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
@@ -15,6 +16,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ItemInfoDao {
+
+    @Query("SELECT MAX(id) FROM item_info_table")
+    suspend fun getMaxId(): Long?
+
     // 全量分页
     @Query("SELECT * FROM item_info_table")
     fun getAllPaged(): PagingSource<Int, ItemInfo>
@@ -41,5 +46,16 @@ interface ItemInfoDao {
     // 只更新阅读进度
     @Query("UPDATE item_info_table SET currentPage = :currentPage WHERE path = :path AND hash = :hash AND androidId = :androidId")
     suspend fun updateCurrentPage(path: String, hash: String, androidId: String, currentPage: Int)
+
+    // 👇 新增：带 ID 分配的批量插入（关键！）
+    @Transaction
+    suspend fun insertAllWithAutoId(items: List<ItemInfo>): LongArray { // 👈 返回 LongArray
+        val currentMax = getMaxId()?: 0L
+        val newItems = items.mapIndexed { index, item ->
+            item.copy(id = currentMax + 1 + index)
+        }
+        val rowIds = insertAll(newItems) // 这已经是 LongArray！
+        return rowIds // ✅ 直接返回，无需 .toList()
+    }
 
 }

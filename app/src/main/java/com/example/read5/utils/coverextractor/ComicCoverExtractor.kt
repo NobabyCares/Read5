@@ -8,7 +8,6 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import com.example.read5.utils.restoreSafPermission
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -25,7 +24,6 @@ class ComicCoverExtractor: CoverExtractor {
         if (bitmap != null) {
             // 保存为与 PDF 相同的格式（WebP/PNG）
             val saved = CoverExtractorUitils.saveCoverBitmap(bitmap = bitmap, coverFile)
-            bitmap.recycle()
             return true
         }
         return false

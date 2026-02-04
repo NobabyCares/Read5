@@ -33,7 +33,7 @@ fun PdfView(
     onError: (Throwable) -> Unit = { }
 ) {
 
-    val filePath = DocumentHolder.currentItem
+    val filePath = DocumentHolder.requireItem()
     if (filePath == null) {
         // 显示加载中或错误
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

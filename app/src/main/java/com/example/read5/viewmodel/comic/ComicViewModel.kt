@@ -28,6 +28,18 @@ class ComicViewModel @Inject constructor() : ViewModel() {
     // ✅ 直接缓存 <index, bitmap>，用 immutable map 触发重组
     private val _pageCache = MutableStateFlow<Map<Int, ImageBitmap>>(emptyMap())
     val pageCache: StateFlow<Map<Int, ImageBitmap>> = _pageCache
+    // 2. 再初始化缓存，并传入回调
+    // 先创建缓存实例，再设置回调（避免初始化时自引用）
+    private val comicPageCache: ComicPageCache = run {
+        val cache = ComicPageCache(maxPages = ComicPageCache.MAX_SIZE_IN_PIXELS)
+        cache.onChange = {
+            viewModelScope.launch(Dispatchers.Main) {
+                Log.d(TAG, "Updating _pageCache with size: ${cache.snapshot().size}")
+                _pageCache.value = cache.snapshot() // 👈 用局部变量 `cache`
+            }
+        }
+        cache
+    }
 
 
     private val _virtualCanvas = MutableStateFlow<VirtualCanvas?>(null)
@@ -62,33 +74,22 @@ class ComicViewModel @Inject constructor() : ViewModel() {
             )
         }
         _virtualCanvas.value = BuilderVirtualCanvas.builderVirtualCanvas(sortedPages)
-        Log.d(TAG, " initLoader_success")
     }
 
     // 加载指定页（外部调用）
     fun loadPage(index: Int) {
+        if (_pageCache.value.containsKey(index)) {
+            return
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
             val bitmap = folderOrZipLoader.loadPage(index)
             if (bitmap != null) {
-                // 回到主线程更新 StateFlow
-                viewModelScope.launch(Dispatchers.Main) {
-                    _pageCache.value += mapOf(index to bitmap)
-                }
+                // 1. 放入 LRU 缓存（长期存储）
+                comicPageCache.put(index, bitmap)
+
             }
         }
     }
 
-    // 获取 bitmap（供 Composable 使用）
-    fun getPageBitmap(pageIndex: Int): ImageBitmap? {
-        val bitmap =_pageCache.value[pageIndex]
-        if(bitmap == null){
-            loadPage(pageIndex)
-        }
-        return _pageCache.value[pageIndex]
-    }
-
-
-    // 清理缓存
-    suspend fun clearCache() {
-    }
 }

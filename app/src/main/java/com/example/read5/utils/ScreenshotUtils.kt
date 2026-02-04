@@ -94,10 +94,8 @@ object ScreenshotUtils {
                 { copyResult ->
                     if (copyResult == PixelCopy.SUCCESS) {
                         val result = saveScreenshot(context, bitmap)
-                        bitmap.recycle()
                         continuation.resumeWith(Result.success(result))
                     } else {
-                        bitmap.recycle()
                         continuation.resumeWith(Result.success("PixelCopy 错误: $copyResult"))
                     }
                 },
@@ -132,7 +130,6 @@ object ScreenshotUtils {
         view.setLayerType(originalLayerType, null)
 
         val result = saveScreenshot(context, bitmap)
-        bitmap.recycle()
         return result
     }
 

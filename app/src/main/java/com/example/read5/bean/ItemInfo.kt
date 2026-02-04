@@ -21,9 +21,12 @@ import com.example.read5.global.GlobalData
     indices = [
         Index("category"),
         Index("name"),
+        Index("id")
     ]
 )
 data class ItemInfo(
+//    id，不做主键，已经有联合主键，用于查询
+    var id: Long = 0,
     var name: String = "",
     var secondName: String = "",
     var author: String = "",

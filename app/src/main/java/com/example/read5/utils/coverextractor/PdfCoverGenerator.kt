@@ -34,7 +34,6 @@ class PdfCoverGenerator : CoverExtractor {
 //                      保存封面
                             CoverExtractorUitils.saveCoverBitmap(bitmap, coverFile)
 
-                            bitmap.recycle()
                         }
                     }
                 }

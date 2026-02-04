@@ -22,8 +22,8 @@ fun EpubScreen() {
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val context = LocalContext.current
-    val epubPath = DocumentHolder.currentItem?.path ?: ""
+    val itemInfo = DocumentHolder.requireItem()
+    val epubPath = itemInfo.path
 
     LaunchedEffect(epubPath) {
         if (epubPath.isNotEmpty()) {

@@ -43,11 +43,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.read5.bean.ComicPage
+import com.example.read5.bean.ItemKey
 import com.example.read5.bean.PageLayout
 import com.example.read5.bean.VirtualCanvas
+import com.example.read5.global.GlobalSettings
 import com.example.read5.singledata.DocumentHolder
 
 import com.example.read5.viewmodel.comic.ComicViewModel
+import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import kotlinx.coroutines.delay
 
 @Composable
@@ -55,20 +58,29 @@ fun VirtualComicCanvas(
     modifier: Modifier = Modifier
 ) {
     val TAG = "VirtualComicCanvas"
-    val path = DocumentHolder.currentItem?.path
+    val itemInfo = DocumentHolder.requireItem()
+    val path = DocumentHolder.requireItem().path
+
+//    key,用于数据库更新，因为数据库是联合主键
+    val key = ItemKey(
+        androidId = itemInfo.androidId,
+        path = path ,
+        hash = itemInfo.hash
+    )
     val context = LocalContext.current
 
 
     val comicViewModel: ComicViewModel = hiltViewModel()
+    val updateItemInfo: UpdateItemInfo = hiltViewModel()
 //    虚拟画布生成
     val virtualCanvas by comicViewModel.virtualCanvas.collectAsState()
 //    缓存
     val pageCache by comicViewModel.pageCache.collectAsState()
 
 //    上下偏移
-    var offsetY by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(itemInfo.currentPage.toFloat()) }
 //    缩放
-    var scale by remember { mutableStateOf(1f) }
+    var scale by remember { mutableStateOf(GlobalSettings.getScale()) }
     // 添加：用于记录菜单是否可见的状态
     var menuVisible by remember { mutableStateOf(false) }
 
@@ -78,18 +90,16 @@ fun VirtualComicCanvas(
         }
     }
 
-/*    // ✅ 新增：防抖保存阅读进度
-    LaunchedEffect(offsetY, path) {
+    // ✅ 新增：防抖保存阅读进度
+    LaunchedEffect(offsetY, key,scale) {
         if (path != null && virtualCanvas != null) {
             // 防抖：等待 1 秒无变化再保存
-            delay(1000)
+            delay(3000)
             // 再次检查是否还是同一个 path（避免旧任务覆盖新书）
-            if (DocumentHolder.currentItem?.path == path) {
-                comicViewModel.saveReadingProgress(path, offsetY)
-                Log.d("VirtualComicCanvas", "Saved reading progress: $offsetY for $path")
-            }
+            updateItemInfo.updateCurrentPage(currentPage = offsetY.toInt(), key = key)
+            GlobalSettings.setScale(scale)
         }
-    }*/
+    }
 
 
     if (virtualCanvas == null) {
@@ -100,8 +110,6 @@ fun VirtualComicCanvas(
     }
 
     val canvas = virtualCanvas!!
-
-
 
 
     // ✅ 正确方式：用手势控制 offsetY
@@ -142,7 +150,6 @@ fun VirtualComicCanvas(
         Canvas(modifier = Modifier.fillMaxSize()) {
             // 计算可见区域（Y 范围）
             val visibleTop = -offsetY.toInt()
-            Log.d(TAG, "offsetY: $offsetY.toInt(),")
             val visibleBottom = visibleTop + size.height.toInt()
 
             // 筛选可见页面
@@ -151,10 +158,10 @@ fun VirtualComicCanvas(
             }
 
             visiblePages.forEach { page ->
-                comicViewModel.getPageBitmap(page.index)
+                comicViewModel.loadPage(page.index)
             }
 
-
+            Log.d(TAG, "visiblePages: ${pageCache.size}")
             // 绘制每一页
             visiblePages.forEach { page ->
                 pageCache[page.index]?.let { bitmap ->

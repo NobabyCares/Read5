@@ -1,3 +1,4 @@
+/*
 package com.example.read5.screens
 
 import androidx.compose.material3.Button
@@ -27,4 +28,4 @@ fun ConfigScreen() {
     }
 
     Text("当前书库ID: ${config.recentStoreHouse}")
-}
+}*/

@@ -6,12 +6,12 @@ import androidx.compose.ui.graphics.ImageBitmap
 
 
 class ComicPageCache(
-    maxPages: Int = 15,
+    maxPages: Int = 50 * 1024 * 1024,
     // 👈 新增回调,通知父类重组
-    private val onPut: ((Int) -> Unit)? = null  ) {
+    var onChange: (() -> Unit)? = null) {
 
     companion object {
-        const val MAX_PAGES = 15
+        const val MAX_SIZE_IN_PIXELS = 50 * 1024 * 1024 // 50MB 像素容量
     }
     private val TAG = "ComicPageCache"
 
@@ -27,9 +27,8 @@ class ComicPageCache(
             oldValue: ImageBitmap,
             newValue: ImageBitmap?
         ) {
-            if (evicted) {
-                Log.d("ComicPageCache", "Evicted page $key")
-            }
+            super.entryRemoved(evicted, key, oldValue, newValue)
+            onChange?.invoke()
         }
 
 
@@ -44,8 +43,10 @@ class ComicPageCache(
     fun put(pageIndex: Int, bitmap: ImageBitmap) {
         lruCache.put(pageIndex, bitmap)
         // ✅ 手动触发回调（在调用 put 的线程）
-        onPut?.invoke(pageIndex)
+        onChange?.invoke()
     }
+
+    fun snapshot(): Map<Int, ImageBitmap> = lruCache.snapshot()
 
     fun contains(pageIndex: Int): Boolean {
         return lruCache.snapshot().containsKey(pageIndex)
@@ -53,8 +54,8 @@ class ComicPageCache(
 
     fun clear() {
         lruCache.evictAll()
+        onChange?.invoke()
     }
-
     fun size(): Int = lruCache.size()
 
 

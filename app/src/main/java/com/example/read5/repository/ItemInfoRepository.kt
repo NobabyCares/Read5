@@ -60,11 +60,15 @@ class ItemInfoRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insert(itemInfo: ItemInfo): Long {
-        return itemInfoDao.insert(itemInfo)
+        val currentMax = itemInfoDao.getMaxId()?: 0L
+        val newItemInfo = itemInfo.copy(
+            id = currentMax
+        )
+        return itemInfoDao.insert(newItemInfo)
     }
 
     override suspend fun insert(item: List<ItemInfo>) {
-        itemInfoDao.insertAll(item)
+        itemInfoDao.insertAllWithAutoId(item)
     }
 
     override suspend fun updateCollectStatus(key: ItemKey, isCollect: Boolean) {

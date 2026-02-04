@@ -14,7 +14,6 @@ class EpubCoverExtractor : CoverExtractor{
         if (bitmap != null) {
             // 保存为与 PDF 相同的格式（WebP/PNG）
             val saved = CoverExtractorUitils.saveCoverBitmap(bitmap = bitmap, coverFile)
-            bitmap.recycle()
             return true
         }
         return false
