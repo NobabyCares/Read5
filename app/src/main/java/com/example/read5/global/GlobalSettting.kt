@@ -13,7 +13,7 @@ import kotlin.concurrent.write
 @Serializable
 data class Config(
     var history: List<Long> = emptyList(),
-    var recentStoreHouse: Long = 0L,
+    var recentStoreHouse: Long = 1L,
     var scale: Float = 1f
 )
 
@@ -103,7 +103,7 @@ object GlobalSettings {
     }
 
     fun setScale(scale: Float) {
-        write { it.scale = scale.coerceIn(0.5f, 3.0f) } // 可选：限制缩放范围
+        write { it.scale = scale.coerceIn(0.5f, 5.0f) } // 可选：限制缩放范围
     }
 
     // 强制立即保存（如退出应用时调用）

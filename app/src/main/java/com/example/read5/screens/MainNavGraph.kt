@@ -13,9 +13,12 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.read5.screens.iteminfo.CenteredText
 import com.example.read5.screens.readview.EpubScreen
 import com.example.read5.screens.readview.comic.VirtualComicCanvas
 import com.example.read5.screens.readview.pdfview.PdfView
+import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
+import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -28,8 +31,10 @@ fun MainNavGraph(
     startDestination: String,
     // 用于接收 Scaffold 的 innerPadding
     paddingValues: PaddingValues,
-    //隐藏底部导航栏
+    getItemInfoViewModel: GetItemInfoViewModel,
+    storeHouseViewModel: StoreHouseViewModel
 ) {
+
 
 
     NavHost(
@@ -38,7 +43,7 @@ fun MainNavGraph(
         modifier = Modifier.padding(paddingValues),
     ) {
         composable("bookshelf") {
-            BookShelfScreen(navController)
+            BookShelfScreen(navController,getItemInfoViewModel = getItemInfoViewModel, storeHouseModel = storeHouseViewModel)
         }
         composable("reading") {
             CenteredText("跳转：阅读")
@@ -48,7 +53,7 @@ fun MainNavGraph(
         }
 
         composable("pdf_view") {
-            VirtualComicCanvas()
+            VirtualComicCanvas(navController)
         }
 
     }

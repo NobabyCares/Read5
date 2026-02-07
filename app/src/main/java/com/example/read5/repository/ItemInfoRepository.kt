@@ -14,35 +14,34 @@ import javax.inject.Inject
 interface ItemInfoRepository {
     // ❌ 移除旧的 getAll()、searchByCategory()
     // ✅ 新增：返回可参数化的分页流
-    fun getItemsPager(categoryId: Long): Flow<PagingData<ItemInfo>>
+    fun searchByCategory(categoryId: Long): Flow<PagingData<ItemInfo>>
 
-     fun searchByName(name: String): Flow<PagingData<ItemInfo>>
+    fun searchByName(name: String): Flow<PagingData<ItemInfo>>
 
-    suspend fun insert(itemInfo: ItemInfo): Long
+    fun searchById(id: List<Long>): Flow<PagingData<ItemInfo>>
+
     suspend fun insert(item: List<ItemInfo>)
 
     suspend fun updateCollectStatus(key: ItemKey, isCollect: Boolean)
 
     // 只更新阅读进度
     suspend fun updateCurrentPage(key: ItemKey, currentPage: Int)
+
+
 }
 
 class ItemInfoRepositoryImpl @Inject constructor(
     private val itemInfoDao: ItemInfoDao
 ) : ItemInfoRepository {
 
-    override fun getItemsPager(categoryId: Long): Flow<PagingData<ItemInfo>> {
+    override fun searchByCategory(categoryId: Long): Flow<PagingData<ItemInfo>> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
                 enablePlaceholders = false
             ),
             pagingSourceFactory = {
-                if (categoryId == 1L ) {
-                    itemInfoDao.getAllPaged()
-                } else {
-                    itemInfoDao.getPagedByCategory(categoryId)
-                }
+                itemInfoDao.searchByCategory(categoryId)
             }
         ).flow
     }
@@ -54,25 +53,30 @@ class ItemInfoRepositoryImpl @Inject constructor(
                 enablePlaceholders = false
             ),
             pagingSourceFactory = {
-                    itemInfoDao.searchByName(name.trim())
+                itemInfoDao.searchByName(name.trim())
             }
         ).flow
     }
 
-    override suspend fun insert(itemInfo: ItemInfo): Long {
-        val currentMax = itemInfoDao.getMaxId()?: 0L
-        val newItemInfo = itemInfo.copy(
-            id = currentMax
-        )
-        return itemInfoDao.insert(newItemInfo)
+    override fun searchById(id: List<Long>): Flow<PagingData<ItemInfo>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                itemInfoDao.searchById(id)
+            }
+        ).flow
     }
+
 
     override suspend fun insert(item: List<ItemInfo>) {
         itemInfoDao.insertAllWithAutoId(item)
     }
 
     override suspend fun updateCollectStatus(key: ItemKey, isCollect: Boolean) {
-        itemInfoDao.updateCollectStatus(path = key.path, hash = key.hash, androidId = key.androidId, isCollect)
+        itemInfoDao.updateCollect(path = key.path, hash = key.hash, androidId = key.androidId, isCollect)
     }
 
     override suspend fun updateCurrentPage(key: ItemKey, currentPage: Int) {

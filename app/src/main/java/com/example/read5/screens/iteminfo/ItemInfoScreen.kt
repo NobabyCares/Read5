@@ -1,4 +1,4 @@
-package com.example.read5.screens
+package com.example.read5.screens.iteminfo
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,9 +39,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
-import com.example.read5.utils.coverextractor.ComicCoverExtractor
-import com.example.read5.utils.coverextractor.EpubCoverExtractor
-import com.example.read5.utils.coverextractor.PdfCoverGenerator
 import com.example.read5.viewmodel.CoverExtractorViewModel
 import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 

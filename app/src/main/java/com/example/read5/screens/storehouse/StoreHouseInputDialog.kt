@@ -1,11 +1,7 @@
 // 文件路径: app/src/main/java/com/example/read4/screens/StoreHouseInputDialog.kt
 
-package com.example.read5.screens
+package com.example.read5.screens.storehouse
 
-import android.content.Intent
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*

@@ -17,6 +17,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.read5.screens.topbar.TopBar
+import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
+import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
 
 data class NavItem(val title: String, val route: String)
@@ -30,19 +33,25 @@ fun MainBookApp () {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-
+    val getItemInViewModel: GetItemInfoViewModel = hiltViewModel()
+    val storeHouseViewModel: StoreHouseViewModel = hiltViewModel()
 
     Scaffold(
         topBar = {
+            // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
+            if (currentRoute == "bookshelf") {
+                TopBar(navController, getItemInViewModel, storeHouseViewModel)
+            }
+
         },
         bottomBar = {
             // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
-            if (currentRoute != "pdf_view") {
+            if (currentRoute == "bookshelf") {
                 BottomBarScreen(navController)
             }
         }
     ) { padding ->
-        MainNavGraph(navController, "bookshelf", padding)
+        MainNavGraph(navController, "bookshelf", padding, getItemInViewModel, storeHouseViewModel)
 }
 }
 

@@ -1,6 +1,7 @@
 package com.example.read5.screens.readview.comic
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.SharedTransitionScope.PlaceHolderSize.Companion.contentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -42,6 +43,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.read5.bean.ComicPage
 import com.example.read5.bean.ItemKey
 import com.example.read5.bean.PageLayout
@@ -55,11 +58,13 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun VirtualComicCanvas(
+    navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
     val TAG = "VirtualComicCanvas"
     val itemInfo = DocumentHolder.requireItem()
     val path = DocumentHolder.requireItem().path
+
 
 //    key,用于数据库更新，因为数据库是联合主键
     val key = ItemKey(
@@ -84,14 +89,40 @@ fun VirtualComicCanvas(
     // 添加：用于记录菜单是否可见的状态
     var menuVisible by remember { mutableStateOf(false) }
 
+
+
+    // ✅ 修改 BackHandler 逻辑
+    BackHandler {
+        // 方法1: 检查是否能 pop
+        if (navController.previousBackStackEntry != null) {
+            navController.popBackStack()
+        } else {
+            // 方法2: 直接导航到 bookshelf
+            navController.navigate("bookshelf") {
+                // 关键设置：清除所有页面
+                popUpTo(0) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+            }
+        }
+    }
+
     LaunchedEffect(path) {
         if (path != null) {
             comicViewModel.initLoader(context, path)
         }
     }
 
+    if (virtualCanvas == null) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     // ✅ 新增：防抖保存阅读进度
-    LaunchedEffect(offsetY, key,scale) {
+    LaunchedEffect(offsetY, key, scale) {
         if (path != null && virtualCanvas != null) {
             // 防抖：等待 1 秒无变化再保存
             delay(3000)
@@ -101,33 +132,20 @@ fun VirtualComicCanvas(
         }
     }
 
-
-    if (virtualCanvas == null) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
     val canvas = virtualCanvas!!
-
 
     // ✅ 正确方式：用手势控制 offsetY
     Box(
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                detectTransformGestures { centroid, pan, zoom, _ ->
+                detectTransformGestures { _, pan, zoom, _ ->
                     // 1. 更新缩放
                     scale = (scale * zoom).coerceIn(1f, 5f)
-
-
                     // 控制缩放范围
                     scale = scale.coerceIn(0.5f, 5f) // 根据需求调整最小最大值
-
                     // 调整平移距离
                     offsetY += pan.y / scale * 1.5f
-
                     // 防止画布超出边界
                     val maxOffset = (canvas.totalHeight * scale - size.height).coerceAtLeast(0f)
                     offsetY = offsetY.coerceIn(-maxOffset, 0f)
@@ -198,3 +216,5 @@ fun VirtualComicCanvas(
 
     }
 }
+
+

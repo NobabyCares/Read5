@@ -36,10 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // 在 Companion object 或单独文件中定义
-        val DEFAULT_STOREHOUSES = listOf(
-            StoreHouse(name = "全部", type = ""),
-        )
+
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -48,17 +45,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "read_app_database.db" // 数据库文件名
                 )
-                    .addCallback(object : Callback() {
-                        override fun onCreate(db: SupportSQLiteDatabase) {
-                            super.onCreate(db)
-                            // 使用 IO 线程插入默认数据
-                            INSTANCE?.let { database ->
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    database.storeHouseDao().insertAll(DEFAULT_STOREHOUSES)
-                                }
-                            }
-                        }
-                    })
                     .setJournalMode(JournalMode.TRUNCATE)
                     .build()
 

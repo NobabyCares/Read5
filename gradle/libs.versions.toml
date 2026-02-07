@@ -43,6 +43,7 @@ paging = "3.3.2"
 
 # PDF Viewer (你用的 TalbotGooday 分支)
 pdfViewer = "1.0.0-alpha12"
+storage = "1.5.0"
 
 [libraries]
 # AndroidX Core
@@ -106,6 +107,7 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-test" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 androidx-arch-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "arch-core-testing" }
+androidx-storage = { group = "androidx.test.services", name = "storage", version.ref = "storage" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

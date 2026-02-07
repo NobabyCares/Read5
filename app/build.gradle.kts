@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.androidx.room.paging)
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+    implementation(libs.androidx.storage)
 
     kapt(libs.androidx.room.compiler) // 或 annotationProcessor
 

@@ -1,116 +1,50 @@
 package com.example.read5.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.example.read5.global.GlobalSettings
+import com.example.read5.screens.iteminfo.ItemInfoScreen
+import com.example.read5.screens.storehouse.StoreHouseCard
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 import com.example.read5.singledata.DocumentHolder
-import com.example.read5.viewmodel.storehouse.GetBaseItemInfoViewModel
+import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
 
 // BookShelfScreen.kt
 // ——————— 书架页面 ———————
 @Composable
-fun BookShelfScreen(navController: NavHostController) {
+fun BookShelfScreen(
+    navController: NavHostController,
+    storeHouseModel: StoreHouseViewModel,
+    getItemInfoViewModel: GetItemInfoViewModel) {
 
     val TAG: String = "BookShelfScreen"
-    val storeHouseModel: StoreHouseViewModel = hiltViewModel()
-    val itemInfoViewModel: GetBaseItemInfoViewModel = hiltViewModel()
 
+    //StoreHouse 数据收集
+    val storeHouses by storeHouseModel.storeHouses.collectAsStateWithLifecycle()
+    val isShow by storeHouseModel.isShow
 
-
-
-    val storeHouses by storeHouseModel.storeHouses.collectAsState()
-
-
-    val filteredItemFlow by itemInfoViewModel.filteredPagedItems.collectAsState()
-    val filteritems = filteredItemFlow.collectAsLazyPagingItems()
-
-
-    //    导入控制
-    var showImportDialog by remember { mutableStateOf(false) }
-//    搜索控制
-    var searchQuery by remember { mutableStateOf("") }
-
-    // 搜索结果（输入即搜 + 防抖）
-    val searchResults = itemInfoViewModel.searchResults.collectAsLazyPagingItems()
-    LaunchedEffect(searchQuery) {
-        itemInfoViewModel.updateQuery(searchQuery)
-    }
-
-    // ✅ 新代码：根据是否在搜索，决定显示哪个列表
-    val isSearching = searchQuery.isNotBlank()
-    val displayItems = if (isSearching) searchResults else filteritems
-
+    //ItemInfo 数据收集
+    //这个是展示数据,可能是搜索数据,也可能是全部数据
+    val itemInfos = getItemInfoViewModel.items.collectAsLazyPagingItems()
 
     Column(modifier = Modifier.fillMaxSize()) {
-
-        // ✅ 使用轻量 SearchBar，不占满屏幕
-        SearchBar(
-            query = searchQuery,
-            onQueryChange = { searchQuery = it },
-            modifier = Modifier
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 16.dp), // 添加左右内边距
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // 左侧：图标 + 标题
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // 如果需要可以添加图标
-                // Icon(imageVector = Icons.Default.Book, contentDescription = "书城")
-                Text(
-                    text = "书城",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // 右侧：导入按钮
-            Text(
-                text = "导入",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .clickable { showImportDialog = true }
-                    .padding(horizontal = 12.dp, vertical = 8.dp) // 增加点击区域
-            )
-        }
-
-        StoreHouseSelector(storeHouses = storeHouses)
 
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 96.dp),
@@ -119,15 +53,35 @@ fun BookShelfScreen(navController: NavHostController) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(displayItems.itemCount) { index ->
-                displayItems[index]?.let { ItemInfoScreen(it, onClick = {
-                    // ✅ 正确：触发导航，传递必要的参数
-                    // ✅ 关键：对路径进行 URL 编码
-                    // ✅ 关键：使用 Uri.encode()，不是 URLEncoder！
-                    DocumentHolder.setCurrentItem(it)
-                    navController.navigate("pdf_view")
-                }) }
+            if(isShow){
+                items(storeHouses) { storeHouse ->
+                    StoreHouseCard(
+                        storeHouse = storeHouse,
+                        onClick = {
+                            GlobalSettings.setRecentStoreHouse(storeHouse.id)
+                            getItemInfoViewModel.searchCategory(storeHouse.id)
+                            storeHouseModel.isShow(false)
+                        }
+                    )
+                }
+
+            }else{
+                items(itemInfos.itemCount) { index ->
+                    itemInfos[index]?.let { ItemInfoScreen(it, onClick = {
+                        // ✅ 正确：触发导航，传递必要的参数
+                        // ✅ 关键：对路径进行 URL 编码
+                        // ✅ 关键：使用 Uri.encode()，不是 URLEncoder！
+                        DocumentHolder.setCurrentItem(it)
+                        GlobalSettings.addToHistory(it.id)
+                        // ✅ 方式1：使用 navigate，确保正确进入栈
+                        navController.navigate("pdf_view") {
+                            // 重要：不要 popUpTo，这样会保留返回栈
+                            launchSingleTop = true
+                        }
+                    }) }
+                }
             }
+
         }
 
         // 底部播放条
@@ -141,11 +95,6 @@ fun BookShelfScreen(navController: NavHostController) {
         }
     }
 
-    // ✅ 关键修复：在 Column 外面（同级）添加弹窗！
-    if (showImportDialog) {
-        StoreHouseInputDialog(
-            onDismiss = { showImportDialog = false },
-        )
-    }
+
 
 }

@@ -1,3 +1,4 @@
+/*
 package com.example.read5.viewmodel.storehouse
 
 import androidx.compose.runtime.State
@@ -24,13 +25,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+*/
 /*
 * 这里是 ItemInfo Bean 数据库操作的ViewModel
-* */
+* *//*
+
 @HiltViewModel
 class GetBaseItemInfoViewModel @Inject constructor(
     private val itemInfoRepository: ItemInfoRepository
 ) : ViewModel() {
+
+
 
     // 当前筛选的 category（null = 全部）
     private val _currentCategory = MutableStateFlow<Long>(1L)
@@ -50,13 +55,13 @@ class GetBaseItemInfoViewModel @Inject constructor(
     // ✅ 核心：每当 category 变化，就发射新的 PagingData 流
     private val pagedItems: StateFlow<Flow<PagingData<ItemInfo>>> = _currentCategory
         .map { categoryId ->
-            itemInfoRepository.getItemsPager(categoryId)
+            itemInfoRepository.getCategoryItems(categoryId)
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = itemInfoRepository.getItemsPager(1L)
-        )
+            initialValue = itemInfoRepository.getCategoryItems(1L)
+    )
 
     val filteredPagedItems: StateFlow<Flow<PagingData<ItemInfo>>> =
         combine(pagedItems, _fileTypeFilter) { baseFlow, fileType ->
@@ -73,7 +78,7 @@ class GetBaseItemInfoViewModel @Inject constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = pagedItems.value // 初始不过滤
-            )
+    )
 
     val searchResults: Flow<PagingData<ItemInfo>> = _searchQuery
         .debounce(300) // 防抖 300ms
@@ -122,4 +127,4 @@ class GetBaseItemInfoViewModel @Inject constructor(
     }
 
 
-}
+}*/

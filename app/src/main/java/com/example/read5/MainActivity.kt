@@ -53,6 +53,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.read5.global.GlobalData
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.MainBookApp
+import com.example.read5.screens.topbar.TopBar
 import com.example.read5.ui.theme.Read5Theme
 import com.example.read5.utils.ScreenshotUtils
 import dagger.hilt.android.AndroidEntryPoint

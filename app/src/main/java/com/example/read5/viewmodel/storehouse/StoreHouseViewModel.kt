@@ -1,11 +1,16 @@
 package com.example.read5.viewmodel.storehouse
 
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.read5.bean.StoreHouse
 import com.example.read5.repository.StoreHouseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,6 +27,10 @@ class StoreHouseViewModel @Inject constructor(
         initialValue = emptyList()
     )
 
+    private val _isShow = mutableStateOf(false)
+    val isShow: State<Boolean> = _isShow
+
+
     fun insert(item: StoreHouse): Long {
         var id: Long = -1;
         viewModelScope.launch {
@@ -31,5 +40,7 @@ class StoreHouseViewModel @Inject constructor(
         return id
     }
 
-
+    fun isShow(s: Boolean){
+        _isShow.value = s
+    }
 }
