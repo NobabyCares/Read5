@@ -1,7 +1,5 @@
-package com.example.read5.screens
+package com.example.read5.screens.topbar
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,15 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.paging.compose.collectAsLazyPagingItems
-import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
+import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import kotlinx.coroutines.delay
 
 //搜索框
 @Composable
 fun SearchBarScreen(
-    getItemInfoViewModel: GetItemInfoViewModel,
+    searchItemInfo: SearchItemInfo,
     onDismiss: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -38,7 +34,7 @@ fun SearchBarScreen(
     LaunchedEffect(searchQuery) {
         if (searchQuery.isNotBlank()) {
             delay(200)
-            getItemInfoViewModel.updateQuery(searchQuery)
+            searchItemInfo.searchByName(searchQuery)
         }
     }
 

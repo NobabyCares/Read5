@@ -9,6 +9,9 @@ import javax.inject.Inject
 interface StoreHouseRepository {
     fun getAll(): Flow<List<StoreHouse>>
     suspend fun insert(storeHouse: StoreHouse): Long
+
+    //更新总数
+    suspend fun updateByCount(id: Long, count: Long)
 }
 
 class StoreHouseRepositoryImpl @Inject constructor(
@@ -16,4 +19,7 @@ class StoreHouseRepositoryImpl @Inject constructor(
 ) : StoreHouseRepository {
     override fun getAll() = dao.getAll()
     override suspend fun insert(storeHouse: StoreHouse) = dao.insert(storeHouse)
+    override suspend fun updateByCount(id: Long, count: Long) {
+        dao.updateByCount(id = id, count = count)
+    }
 }

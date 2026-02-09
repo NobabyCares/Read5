@@ -1,24 +1,14 @@
 package com.example.read5.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home // ✅ 只导入 Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.read5.screens.topbar.TopBar
-import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
+import com.example.read5.viewmodel.iteminfo.SearchItemInfo
+import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
 
@@ -33,8 +23,9 @@ fun MainBookApp () {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val getItemInViewModel: GetItemInfoViewModel = hiltViewModel()
+    val getItemInViewModel: SearchItemInfo = hiltViewModel()
     val storeHouseViewModel: StoreHouseViewModel = hiltViewModel()
+    val updateItemInfo: UpdateItemInfo = hiltViewModel()
 
     Scaffold(
         topBar = {

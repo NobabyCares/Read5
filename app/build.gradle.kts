@@ -61,8 +61,7 @@ android {
 }
 
 dependencies {
-
-// ✅ 官方 foundation（包含 zoomable）
+    //手势
     implementation(libs.androidx.compose.foundation)
 
     //    pdf 库

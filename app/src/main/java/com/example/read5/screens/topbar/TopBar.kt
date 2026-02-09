@@ -11,18 +11,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.read5.global.GlobalSettings
-import com.example.read5.screens.SearchBarScreen
 import com.example.read5.screens.storehouse.StoreHouseInputDialog
-import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
+import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(navController: NavController,
-          getItemInfoViewModel: GetItemInfoViewModel,
+           searchItemInfo: SearchItemInfo,
            storeHouseViewModel: StoreHouseViewModel
            ) {
     // 用于控制菜单展开状态
@@ -30,8 +28,6 @@ fun TopBar(navController: NavController,
     //用于控制搜索框的展开状态
     var isSearchExpanded by remember { mutableStateOf(false) }
 
-    //导入框
-    var showImportDialog by remember { mutableStateOf(false) }
 
     val tabs = listOf("书桌", "历史记录", "书架") // ✅ 推荐
     //选择标签高亮
@@ -47,10 +43,31 @@ fun TopBar(navController: NavController,
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if(!isSearchExpanded){
-            // 左侧标签
-            // 当前选中的 tab 索引（可选，用于高亮）
+        if(isSearchExpanded){
+            // ✅ 放在 BookShelfScreen 或 TopBar 的 Composable 内部
+            BackHandler(enabled = isSearchExpanded) {
+                // 退出搜索模式
+                isSearchExpanded = false
+                // 恢复默认分类（可选）
+                searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
+            }
+            // 搜索框 + 背景遮罩（可选）
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                SearchBarScreen(
+                    searchItemInfo = searchItemInfo,
+                    onDismiss = {
+                        isSearchExpanded = false
+                    },
 
+                    )
+            }
+        }else{
+             // 左侧标签
+            // 当前选中的 tab 索引（可选，用于高亮）
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 tabs.forEachIndexed { index, tabName ->
                     Text(
@@ -61,11 +78,11 @@ fun TopBar(navController: NavController,
                                 selectedTab = index
                                 when (tabName){
                                     "历史记录" -> {
-                                        getItemInfoViewModel.updateQuery(GlobalSettings.getHistory())
+                                        searchItemInfo.searchById(GlobalSettings.getHistory())
                                         storeHouseViewModel.isShow(false)
                                     }
                                     "书桌" -> {
-                                        getItemInfoViewModel.searchCategory(GlobalSettings.getRecentStoreHouse())
+                                        searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
                                         storeHouseViewModel.isShow(false)
                                     }
                                     "书架" ->{
@@ -93,7 +110,6 @@ fun TopBar(navController: NavController,
                     contentDescription = "搜索"
                 )
             }
-
             Box {
                 // 右侧更多按钮
                 IconButton(onClick = { expanded = !expanded }) {
@@ -108,17 +124,7 @@ fun TopBar(navController: NavController,
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("导入") },
-                        onClick = {
-                            // 处理选项 1 的点击事件
-                            expanded = false
-                            showImportDialog = true
 
-                        }
-
-
-                    )
                     DropdownMenuItem(
                         text = { Text("选项 2") },
                         onClick = {
@@ -128,42 +134,12 @@ fun TopBar(navController: NavController,
                     )
                 }
             }
-        }else{
-
-            // ✅ 放在 BookShelfScreen 或 TopBar 的 Composable 内部
-            BackHandler(enabled = isSearchExpanded) {
-                // 退出搜索模式
-                isSearchExpanded = false
-                // 恢复默认分类（可选）
-                getItemInfoViewModel.searchCategory(GlobalSettings.getRecentStoreHouse())
-            }
-            // 搜索框 + 背景遮罩（可选）
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                SearchBarScreen(
-                    getItemInfoViewModel = getItemInfoViewModel,
-                    onDismiss = {
-                        isSearchExpanded = false
-                    },
-
-                    )
-            }
         }
 
 
 
-        }
-
-
-        // ✅ 关键修复：在 Column 外面（同级）添加弹窗！
-        if (showImportDialog) {
-            StoreHouseInputDialog(
-                onDismiss = { showImportDialog = false },
-            )
-        }
     }
+}
+
 
 

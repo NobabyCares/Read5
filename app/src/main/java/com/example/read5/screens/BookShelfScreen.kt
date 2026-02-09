@@ -13,18 +13,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.iteminfo.ItemInfoScreen
 import com.example.read5.screens.storehouse.StoreHouseCard
+import com.example.read5.screens.storehouse.StoreHouseInputDialog
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 import com.example.read5.singledata.DocumentHolder
-import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
+import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 
 // BookShelfScreen.kt
 // ——————— 书架页面 ———————
@@ -32,7 +35,8 @@ import com.example.read5.viewmodel.storehouse.GetItemInfoViewModel
 fun BookShelfScreen(
     navController: NavHostController,
     storeHouseModel: StoreHouseViewModel,
-    getItemInfoViewModel: GetItemInfoViewModel) {
+    searchItemInfo: SearchItemInfo
+) {
 
     val TAG: String = "BookShelfScreen"
 
@@ -40,9 +44,12 @@ fun BookShelfScreen(
     val storeHouses by storeHouseModel.storeHouses.collectAsStateWithLifecycle()
     val isShow by storeHouseModel.isShow
 
+    //是否显示导入compose
+    var isImport by remember { mutableStateOf(false) }
+
     //ItemInfo 数据收集
     //这个是展示数据,可能是搜索数据,也可能是全部数据
-    val itemInfos = getItemInfoViewModel.items.collectAsLazyPagingItems()
+    val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -58,23 +65,28 @@ fun BookShelfScreen(
                     StoreHouseCard(
                         storeHouse = storeHouse,
                         onClick = {
-                            GlobalSettings.setRecentStoreHouse(storeHouse.id)
-                            getItemInfoViewModel.searchCategory(storeHouse.id)
-                            storeHouseModel.isShow(false)
+                            if(storeHouse.id != 1L){
+                                GlobalSettings.setRecentStoreHouse(storeHouse.id)
+                                searchItemInfo.searchByCategory(storeHouse.id)
+                                storeHouseModel.isShow(false)
+                            }else{
+                                isImport =  true
+                            }
+
                         }
                     )
                 }
 
             }else{
                 items(itemInfos.itemCount) { index ->
-                    itemInfos[index]?.let { ItemInfoScreen(it, onClick = {
+                    itemInfos[index]?.let { ItemInfoScreen(it, onToView = {
                         // ✅ 正确：触发导航，传递必要的参数
                         // ✅ 关键：对路径进行 URL 编码
                         // ✅ 关键：使用 Uri.encode()，不是 URLEncoder！
                         DocumentHolder.setCurrentItem(it)
                         GlobalSettings.addToHistory(it.id)
                         // ✅ 方式1：使用 navigate，确保正确进入栈
-                        navController.navigate("pdf_view") {
+                        navController.navigate("comic_view") {
                             // 重要：不要 popUpTo，这样会保留返回栈
                             launchSingleTop = true
                         }
@@ -93,8 +105,9 @@ fun BookShelfScreen(
         ) {
             SoundScreen()
         }
+
+        if(isImport){
+            StoreHouseInputDialog { isImport = false }
+        }
     }
-
-
-
 }

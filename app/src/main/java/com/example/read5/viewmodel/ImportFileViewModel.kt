@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
-import com.example.read5.repository.ItemInfoRepository
+import com.example.read5.global.GlobalSettings
 import com.example.read5.repository.StoreHouseRepository
+import com.example.read5.repository.iteminfo.ItemInfoRepository
 import com.example.read5.utils.FileScanner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,8 +20,8 @@ import javax.inject.Inject
 * */
 @HiltViewModel
 class ImportFileViewModel @Inject constructor(
-    private val storeHouseViewModel: StoreHouseRepository, // ✅ 注入 Repository
-    private val itemInfoViewModel: ItemInfoRepository        // ✅ 注入 Repository
+    private val storeHouseRepository: StoreHouseRepository, // ✅ 注入 Repository
+    private val itemInfoRepository: ItemInfoRepository
 ) : ViewModel() {
     suspend fun importStoreHouse(
         context: Context,
@@ -28,8 +29,8 @@ class ImportFileViewModel @Inject constructor(
         type: String,
         contents: List<String>
     ): Long = withContext(Dispatchers.IO) {
-        val storeHouse = StoreHouse(name = name, type = type)
-        val id = storeHouseViewModel.insert(storeHouse)
+        val storeHouse = StoreHouse(name = name, type = type, count = 0, lastUpdateTime = System.currentTimeMillis())
+        val id = storeHouseRepository.insert(storeHouse)
 
         var allBooks = mutableListOf<ItemInfo>()
 
@@ -44,8 +45,12 @@ class ImportFileViewModel @Inject constructor(
         }
 
         if (allBooks.isNotEmpty()) {
-            itemInfoViewModel.insert(allBooks) // 假设它是 suspend 函数
+            itemInfoRepository.insert(allBooks) // 假设它是 suspend 函数
         }
+
+        storeHouseRepository.updateByCount(id, allBooks.size.toLong())
+
+        GlobalSettings.setRecentStoreHouse(id)
 
         return@withContext id
     }

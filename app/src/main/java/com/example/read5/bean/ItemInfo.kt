@@ -3,8 +3,7 @@ package com.example.read5.bean
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import androidx.room.PrimaryKey
-import com.example.read5.global.GlobalData
+import com.example.read5.global.DeviceIdentification
 
 
 @Entity(
@@ -32,12 +31,12 @@ data class ItemInfo(
     var author: String = "",
     var path: String = "",
 //如何去获取这个值?
-    val androidId: String = GlobalData.androidId,
+    val androidId: String = DeviceIdentification.androidId,
 //    总页数
     var totalPage: Int = 0,
 //    阅读的页数
     var currentPage: Int = 0,
-// 如果为false 就是默认渲染第一页,如果为true, 就在应用文件夹cover选择名为"id.webp"的图片
+// 如果为false 就是默认渲染第一页,如果为true, 就在应用文件夹cover选择名为"id.jpg"的图片
     var cover: Boolean =false,
 //    创建时间
     var createTime: String = "",

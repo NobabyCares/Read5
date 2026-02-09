@@ -21,16 +21,16 @@ interface ItemInfoDao {
     suspend fun getMaxId(): Long?
 
     // 按 category 分页
-    @Query("SELECT * FROM item_info_table WHERE category = :categoryId")
+    @Query("SELECT * FROM item_info_table WHERE category = :categoryId AND isShow = 1")
     fun searchByCategory(categoryId: Long): PagingSource<Int, ItemInfo>
 
     // ✅ 新增：按 name 模糊搜索（不区分大小写）
-    @Query("SELECT * FROM item_info_table WHERE name LIKE '%' || :query || '%' ESCAPE '\\'")
+    @Query("SELECT * FROM item_info_table WHERE name LIKE '%' || :query || '%' ESCAPE '\\' AND isShow = 1")
     fun searchByName(query: String): PagingSource<Int, ItemInfo>
 
     //根据id进行查询
     // ✅ 核心：使用 IN (:ids) 语法
-    @Query("SELECT * FROM item_info_table WHERE id IN (:query)")
+    @Query("SELECT * FROM item_info_table WHERE id IN (:query) AND isShow = 1")
     fun searchById(query: List<Long>): PagingSource<Int, ItemInfo>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -38,11 +38,14 @@ interface ItemInfoDao {
 
     // 只更新收藏状态
     @Query("UPDATE item_info_table SET isCollect = :isCollect WHERE path = :path AND hash = :hash AND androidId = :androidId")
-    suspend fun updateCollect(path: String, hash: String, androidId: String, isCollect: Boolean)
+    suspend fun updateByCollect(path: String, hash: String, androidId: String, isCollect: Boolean)
 
     // 只更新阅读进度
     @Query("UPDATE item_info_table SET currentPage = :currentPage WHERE path = :path AND hash = :hash AND androidId = :androidId")
-    suspend fun updateCurrentPage(path: String, hash: String, androidId: String, currentPage: Int)
+    suspend fun updateByCurrentPage(path: String, hash: String, androidId: String, currentPage: Int)
+
+    @Query("UPDATE item_info_table SET isShow = :isShow WHERE path = :path AND hash = :hash AND androidId = :androidId")
+    suspend fun updateByIsShow(path: String, hash: String, androidId: String, isShow: Boolean): Int
 
     // 👇 新增：带 ID 分配的批量插入（关键！）
     @Transaction

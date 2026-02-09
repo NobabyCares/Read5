@@ -42,8 +42,8 @@ class ComicViewModel @Inject constructor() : ViewModel() {
     }
 
 
-    private val _virtualCanvas = MutableStateFlow<VirtualCanvas?>(null)
-    val virtualCanvas: StateFlow<VirtualCanvas?> = _virtualCanvas
+    // 改为普通属性（或直接不存）
+    private var virtualCanvas: VirtualCanvas? = null
 
 
 
@@ -53,10 +53,11 @@ class ComicViewModel @Inject constructor() : ViewModel() {
     private lateinit var loadFile: ZipOrFolderLoad
 
     // 初始化 Loader
-    suspend fun initLoader(context: Context, path: String) {
+    suspend fun initLoader(context: Context, path: String): VirtualCanvas {
         // ✅ 关键：切换漫画时，清空旧缓存！
         // ✅ 1. 清空旧缓存（关键！）
         _pageCache.value = emptyMap()
+        comicPageCache.clear()
 
         loadFile = ZipOrFolderLoad(context, path)
         val sortedPages = loadFile.loadComic()
@@ -73,7 +74,14 @@ class ComicViewModel @Inject constructor() : ViewModel() {
                 pageNames = sortedPages,
             )
         }
-        _virtualCanvas.value = BuilderVirtualCanvas.builderVirtualCanvas(sortedPages)
+        virtualCanvas = BuilderVirtualCanvas.builderVirtualCanvas(sortedPages)
+        // ✅ 立即预加载第一页及下一页
+        if(virtualCanvas != null){
+            viewModelScope.launch(Dispatchers.Main) {
+                preloadPages(currentOffsetY = 0f, virtualCanvas = virtualCanvas!!)
+            }
+        }
+        return virtualCanvas!! // 直接返回
     }
 
     // 加载指定页（外部调用）
@@ -91,5 +99,30 @@ class ComicViewModel @Inject constructor() : ViewModel() {
             }
         }
     }
+
+
+    // 新增函数：预加载附近页面
+    fun preloadPages(currentOffsetY: Float, virtualCanvas: VirtualCanvas) {
+        val visibleTop = -currentOffsetY.toInt()
+        val visibleBottom = visibleTop + 2000 // 屏幕高度+缓冲
+
+        val pagesToPreload = virtualCanvas.pageLayouts
+            .filter { it.bottom > visibleTop && it.top < visibleBottom }
+            .map { it.index }
+            .distinct()
+
+        // 额外预加载前后一页（防滑动卡顿）
+        val extendedPages = mutableSetOf<Int>()
+        pagesToPreload.forEach { idx ->
+            extendedPages += idx
+            if (idx > 0) extendedPages += idx - 1
+            extendedPages += idx + 1
+        }
+
+        extendedPages.forEach { loadPage(it) }
+    }
+
+
+
 
 }

@@ -1,11 +1,11 @@
 package com.example.read5.screens.readview.comic
 
 import android.util.Log
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.SharedTransitionScope.PlaceHolderSize.Companion.contentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -37,7 +37,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -51,10 +54,13 @@ import com.example.read5.bean.PageLayout
 import com.example.read5.bean.VirtualCanvas
 import com.example.read5.global.GlobalSettings
 import com.example.read5.singledata.DocumentHolder
-
+import com.example.read5.utils.comic.GestureUitils
+import com.example.read5.utils.comic.GestureUitils.calculatePan
+import com.example.read5.utils.comic.GestureUitils.calculateZoom
 import com.example.read5.viewmodel.comic.ComicViewModel
 import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import kotlinx.coroutines.delay
+import kotlin.math.hypot
 
 @Composable
 fun VirtualComicCanvas(
@@ -78,7 +84,7 @@ fun VirtualComicCanvas(
     val comicViewModel: ComicViewModel = hiltViewModel()
     val updateItemInfo: UpdateItemInfo = hiltViewModel()
 //    虚拟画布生成
-    val virtualCanvas by comicViewModel.virtualCanvas.collectAsState()
+    var virtualCanvas by remember { mutableStateOf<VirtualCanvas?>(null) }
 //    缓存
     val pageCache by comicViewModel.pageCache.collectAsState()
 
@@ -87,32 +93,29 @@ fun VirtualComicCanvas(
 //    缩放
     var scale by remember { mutableStateOf(GlobalSettings.getScale()) }
     // 添加：用于记录菜单是否可见的状态
-    var menuVisible by remember { mutableStateOf(false) }
+    var isMenuVisible by remember { mutableStateOf(false) }
+
+    var isLoading by remember { mutableStateOf(true) }
 
 
-
-    // ✅ 修改 BackHandler 逻辑
-    BackHandler {
-        // 方法1: 检查是否能 pop
-        if (navController.previousBackStackEntry != null) {
-            navController.popBackStack()
-        } else {
-            // 方法2: 直接导航到 bookshelf
-            navController.navigate("bookshelf") {
-                // 关键设置：清除所有页面
-                popUpTo(0) {
-                    inclusive = true
-                }
-                launchSingleTop = true
-            }
-        }
-    }
 
     LaunchedEffect(path) {
-        if (path != null) {
-            comicViewModel.initLoader(context, path)
+        isLoading = true
+        try {
+            // ✅ 直接获取结果
+            virtualCanvas = comicViewModel.initLoader(context, path)
+        } finally {
+            isLoading = false
         }
     }
+
+    if (isLoading || virtualCanvas == null) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
 
     if (virtualCanvas == null) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -132,6 +135,26 @@ fun VirtualComicCanvas(
         }
     }
 
+    // 新增：预加载可见页面
+    LaunchedEffect(offsetY, scale, virtualCanvas) {
+        Log.d(TAG, "🔁 LaunchedEffect(offsetY=$offsetY, scale=$scale) triggered")
+        virtualCanvas?.let { canvas ->
+            val visibleTop = -offsetY.toInt()
+            val visibleBottom = visibleTop + 2000 // 屏幕高度+缓冲
+
+            val pagesToLoad = canvas.pageLayouts
+                .filter { it.bottom > visibleTop && it.top < visibleBottom }
+                .map { it.index }
+                .distinct()
+
+            pagesToLoad.forEach { index ->
+                Log.d(TAG, "   → loadPage($index)")
+                comicViewModel.loadPage(index) // 安全：在 LaunchedEffect 中调用
+            }
+        }
+    }
+
+
     val canvas = virtualCanvas!!
 
     // ✅ 正确方式：用手势控制 offsetY
@@ -139,33 +162,68 @@ fun VirtualComicCanvas(
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    // 1. 更新缩放
-                    scale = (scale * zoom).coerceIn(1f, 5f)
-                    // 控制缩放范围
-                    scale = scale.coerceIn(0.5f, 5f) // 根据需求调整最小最大值
-                    // 调整平移距离
-                    offsetY += pan.y / scale * 1.5f
-                    // 防止画布超出边界
-                    val maxOffset = (canvas.totalHeight * scale - size.height).coerceAtLeast(0f)
-                    offsetY = offsetY.coerceIn(-maxOffset, 0f)
-                }
-            }
-            .pointerInput(Unit) {
-                // 单独监听点击（不会干扰上面的 transform）
-                detectTapGestures(
-                    onTap = {
-                        menuVisible = !menuVisible
-                    },
-                    // 可选：长按也触发
-                    onLongPress = {
-                        menuVisible = true
+                while (true) {
+                    awaitEachGesture {
+                        var startTime: Long? = null
+                        var totalPan = Offset.Zero
+                        var isMultiFinger = false
+                        val panSmoothing = 1.3f  // 平移平滑系数
+                        val zoomSmoothing = 0.6f // 缩放平滑系数
+
+                        do {
+                            val event = awaitPointerEvent()
+                            // 只有在首次按下时记录 startTime
+                            if (startTime == null && event.changes.any { it.pressed }) {
+                                startTime = System.currentTimeMillis()
+                                if (event.changes.size > 1) isMultiFinger = true
+                            }
+
+                            // 处理移动/缩放
+                            when (event.changes.size) {
+                                1 -> {
+                                    val pan = event.changes[0].positionChange()
+                                    totalPan += pan
+
+                                    // 平滑处理平移
+                                    val smoothedY = pan.y * panSmoothing
+
+                                    // 调整平移距离（减小灵敏度）
+                                    offsetY += smoothedY / scale
+
+                                    // 防止画布超出边界
+                                    val maxOffset = (canvas.totalHeight * scale - size.height).coerceAtLeast(0f)
+                                    offsetY = offsetY.coerceIn(-maxOffset, 0f)
+                                }
+                                2 -> {
+                                    isMultiFinger = true
+                                    val rawZoom = GestureUitils.calculateZoom(event.changes)
+
+                                    // 平滑处理缩放
+                                    val smoothedZoom = 1 + (rawZoom - 1) * zoomSmoothing
+                                    scale = (scale * smoothedZoom).coerceIn(0.5f, 5f)
+
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        // 手指全部抬起
+                        if (startTime != null) {
+                            val duration = System.currentTimeMillis() - startTime
+                            val distance = totalPan.getDistance()
+
+                            // 更严格的点击检测
+                            val isTap = !isMultiFinger && distance <= 12f && duration <= 250
+                            if (isTap) {
+                                isMenuVisible = !isMenuVisible
+                            }
+                        }
                     }
-                )
+                }
             }
 
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
+            val drawStart = System.currentTimeMillis()
             // 计算可见区域（Y 范围）
             val visibleTop = -offsetY.toInt()
             val visibleBottom = visibleTop + size.height.toInt()
@@ -175,11 +233,7 @@ fun VirtualComicCanvas(
                 page.bottom > visibleTop && page.top < visibleBottom
             }
 
-            visiblePages.forEach { page ->
-                comicViewModel.loadPage(page.index)
-            }
 
-            Log.d(TAG, "visiblePages: ${pageCache.size}")
             // 绘制每一页
             visiblePages.forEach { page ->
                 pageCache[page.index]?.let { bitmap ->
@@ -200,18 +254,25 @@ fun VirtualComicCanvas(
                     )
                 }
             }
+            val drawEnd = System.currentTimeMillis()
+            if (drawEnd - drawStart > 50) {
+                Log.d(TAG, "⚠️ Canvas.draw took ${drawEnd - drawStart}ms")
+            }
 
         }
         // 菜单
-        if (menuVisible) {
+        if (isMenuVisible) {
+            Log.d(TAG, "🎨 Menu is now VISIBLE → triggering recompose")
             TopReadingMenu(
-                onDismiss = { menuVisible = false },
+                onDismiss = { isMenuVisible = false },
                 modifier = Modifier.align(Alignment.TopCenter)
             )
             ButtomReadingMenu(
-                onDismiss = { menuVisible = false },
+                onDismiss = { isMenuVisible = false },
                 modifier = Modifier.align(Alignment.BottomEnd)
             )
+        }else{
+            Log.d(TAG, "🎨 Menu is HIDDEN")
         }
 
     }

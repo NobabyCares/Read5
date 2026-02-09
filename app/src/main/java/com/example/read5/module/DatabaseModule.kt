@@ -5,10 +5,10 @@ import com.example.read5.dao.ItemInfoDao
 import com.example.read5.dao.ItemInfoDao_Impl
 import com.example.read5.dao.StoreHouseDao
 import com.example.read5.db.AppDatabase
-import com.example.read5.repository.ItemInfoRepository
-import com.example.read5.repository.ItemInfoRepositoryImpl
 import com.example.read5.repository.StoreHouseRepository
 import com.example.read5.repository.StoreHouseRepositoryImpl
+import com.example.read5.repository.iteminfo.ItemInfoRepository
+import com.example.read5.repository.iteminfo.ItemInfoRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides

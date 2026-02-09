@@ -1,7 +1,9 @@
 package com.example.read5.screens.iteminfo
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,12 +32,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
@@ -46,22 +51,23 @@ import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 @Composable
 fun ItemInfoScreen(
     item: ItemInfo,
-    onClick: () -> Unit,
+    onToView: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-//封面生成
+    val TAG = "ItemInfoScreen"
+    //封面生成
     val coverExtractorViewModel: CoverExtractorViewModel = hiltViewModel()
 
-//    数据库跟新
+    //    数据库跟新
     val updateItemInfoViewModel: UpdateItemInfo = hiltViewModel()
 
     val key: ItemKey = ItemKey(hash = item.hash, path = item.path, androidId = item.androidId)
 
+    var isShowMoreInfoDialg by remember { mutableStateOf(true) }
+
     var isCollect by remember {
         mutableStateOf(item.isCollect)
     }
-
-
 
     // 检查封面是否已存在（PDF 或 EPUB）
     var isCoverReady by remember {
@@ -74,38 +80,56 @@ fun ItemInfoScreen(
     // 🔑 按需生成封面（PDF 或 EPUB）
     LaunchedEffect(item.hash) {
         if (isCoverReady) return@LaunchedEffect
-        coverExtractorViewModel.initCoverExtractor(item.fileType)
-        if(coverExtractorViewModel.generateCover(item.path, item.hash)){
-            isCoverReady = true
+        if(item.fileType.lowercase() in listOf("pdf", "epub", "folder", "zip")){
+            coverExtractorViewModel.initCoverExtractor(item.fileType)
+            if(coverExtractorViewModel.generateCover(item.path, item.hash)){
+                isCoverReady = true
+            }
         }
     }
 
-    Column(
-        modifier = modifier
-            .width(96.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier
-                .aspectRatio(0.7f)
-                .clip(RoundedCornerShape(8.dp))
-                .fillMaxWidth()
+        Column(
+            modifier = modifier
+                .width(96.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            Log.d(TAG, "短按触发")
+                            onToView()
+                        },
+                        onLongPress = {
+                            isShowMoreInfoDialg = false
+                            Log.d(TAG, "长按触发")
+                        },
+                        onDoubleTap = {
+                            // 可选：双击支持
+                            Log.d(TAG, "双击触发")
+                        }
+                    )
+                }
         ) {
-            if (isCoverReady) {
-                // ✅ 加载已生成的封面（PDF/EPUB 共用）
-                val coverPath = coverExtractorViewModel.getCoverFile(item.hash).absolutePath
-                AsyncImage(
-                    model = "file://$coverPath",
-                    contentDescription = "Book cover",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                // ❌ 显示占位符
-                CoverPlaceholder(item.name)
-            }
+            Box(
+                modifier = Modifier
+                    .aspectRatio(0.7f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .fillMaxWidth()
 
-            // 收藏图标
+            ) {
+                if (isCoverReady) {
+                    // ✅ 加载已生成的封面（PDF/EPUB 共用）
+                    val coverPath = coverExtractorViewModel.getCoverFile(item.hash).absolutePath
+                    AsyncImage(
+                        model = "file://$coverPath",
+                        contentDescription = "Book cover",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // ❌ 显示占位符
+                    CoverPlaceholder(item.name)
+                }
+
+                // 收藏图标
                 Icon(
                     imageVector = Icons.Filled.Favorite,
                     contentDescription = "Collected",
@@ -124,75 +148,65 @@ fun ItemInfoScreen(
                         }
 
                 )
-        }
+            }
 
-        // ===== 书名、作者等（保持不变）=====
-        Text(
-            text = item.name,
-            modifier = Modifier.padding(top = 4.dp),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (item.author.isNotEmpty()) {
+            // ===== 书名、作者等（保持不变）=====
             Text(
-                text = item.author,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.outline,
-                maxLines = 1,
+                text = item.name,
+                modifier = Modifier.padding(top = 4.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(Color(0x80E0E0E0), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 4.dp, vertical = 1.dp)
-            ) {
+            if (item.author.isNotEmpty()) {
                 Text(
-                    text = item.fileType.uppercase(),
-                    fontSize = 8.sp,
-                    color = Color.Black
+                    text = item.author,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            val progressText = if (item.totalPage > 0) {
-                "${item.currentPage}/${item.totalPage}"
-            } else {
-                "${item.schedule}%"
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0x80E0E0E0), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                ) {
+                    Text(
+                        text = item.fileType.uppercase(),
+                        fontSize = 8.sp,
+                        color = Color.Black
+                    )
+                }
+                val progressText = if (item.totalPage > 0) {
+                    "${item.currentPage}/${item.totalPage}"
+                } else {
+                    "${item.schedule}%"
+                }
+                Text(
+                    text = progressText,
+                    fontSize = 8.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
-            Text(
-                text = progressText,
-                fontSize = 8.sp,
-                color = MaterialTheme.colorScheme.primary
-            )
         }
+
+    if(!isShowMoreInfoDialg){
+        ItemMoreInfoDialog( item = item, onDismiss = {
+            isShowMoreInfoDialg = true
+        })
     }
 }
 
-// === 封面占位符（保持不变）===
-@Composable
-private fun CoverPlaceholder(title: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(getColorFromTitle(title)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = title.firstOrNull()?.toString() ?: "?",
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
+
 
 fun getColorFromTitle(title: String): Color {
     val hash = title.hashCode()
@@ -200,10 +214,4 @@ fun getColorFromTitle(title: String): Color {
     val g = ((hash ushr 8) and 0xFF).toFloat() / 255f
     val b = ((hash ushr 16) and 0xFF).toFloat() / 255f
     return Color(r, g, b)
-}
-@Composable
-fun CenteredText(text: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text)
-    }
 }

@@ -23,8 +23,8 @@ interface  StoreHouseDao {
     suspend fun insertAll(storeHouses: List<StoreHouse>): List<Long>
 
     // 🔹 更新
-    @Update
-    suspend fun update(storeHouse: StoreHouse)
+    @Query("UPDATE store_house_table SET count = :count WHERE id = :id")
+    suspend fun updateByCount(id: Long, count: Long)
 
     // 🔹 删除
     @Delete

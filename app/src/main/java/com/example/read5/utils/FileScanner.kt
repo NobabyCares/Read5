@@ -1,7 +1,7 @@
 package com.example.read5.utils
 
 import com.example.read5.bean.ItemInfo
-import com.example.read5.utils.CalculateHash.calculateContentBasedHash
+import com.example.read5.utils.HashCalculate.calculateContentBasedHash
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale

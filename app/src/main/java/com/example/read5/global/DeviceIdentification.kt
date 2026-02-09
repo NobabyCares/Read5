@@ -4,7 +4,7 @@ package com.example.read5.global
 import android.content.Context
 import android.provider.Settings
 
-object GlobalData {
+object DeviceIdentification {
 
     // 私有可变上下文引用（仅用于初始化）
     private var initContext: Context? = null
