@@ -49,6 +49,7 @@ fun BookShelfScreen(
 
     //ItemInfo 数据收集
     //这个是展示数据,可能是搜索数据,也可能是全部数据
+    searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
     val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
 
     Column(modifier = Modifier.fillMaxSize()) {

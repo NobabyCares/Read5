@@ -1,4 +1,4 @@
-package com.example.read5.screens
+package com.example.read5.screens.route
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -7,6 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.read5.screens.BookShelfScreen
+import com.example.read5.screens.CenteredText
+import com.example.read5.screens.myview.IsShowScreen
+import com.example.read5.screens.myview.MyViewScreen
 import com.example.read5.screens.readview.comic.VirtualComicCanvas
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
@@ -36,8 +40,12 @@ fun MainNavGraph(
         composable("reading") {
             CenteredText("跳转：阅读")
         }
-        composable("audiobook") {
-            CenteredText("跳转：有声书")
+        composable("my_view") {
+            MyViewScreen(navController,  searchItemInfo = searchItemInfo)
+        }
+
+        composable("item_not_show") {
+            IsShowScreen(navHostController = navController, searchItemInfo = searchItemInfo)
         }
 
         composable("comic_view") {

@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +50,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.read5.bean.ComicPage
+import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
 import com.example.read5.bean.PageLayout
 import com.example.read5.bean.VirtualCanvas
@@ -61,107 +63,59 @@ import com.example.read5.viewmodel.comic.ComicViewModel
 import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import kotlinx.coroutines.delay
 import kotlin.math.hypot
+@Composable
+fun VirtualComicCanvas(navController: NavHostController) {
+    val itemInfo = DocumentHolder.requireItem()
+
+    // 关键：用 key 保证切换漫画时状态重置
+    key(itemInfo.path) {
+        VirtualComicCanvasContent(navController, itemInfo)
+    }
+}
 
 @Composable
-fun VirtualComicCanvas(
+private fun VirtualComicCanvasContent(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    itemInfo: ItemInfo
 ) {
-    val TAG = "VirtualComicCanvas"
-    val itemInfo = DocumentHolder.requireItem()
-    val path = DocumentHolder.requireItem().path
-
-
-//    key,用于数据库更新，因为数据库是联合主键
-    val key = ItemKey(
-        androidId = itemInfo.androidId,
-        path = path ,
-        hash = itemInfo.hash
-    )
     val context = LocalContext.current
-
-
     val comicViewModel: ComicViewModel = hiltViewModel()
-    val updateItemInfo: UpdateItemInfo = hiltViewModel()
-//    虚拟画布生成
+
     var virtualCanvas by remember { mutableStateOf<VirtualCanvas?>(null) }
-//    缓存
     val pageCache by comicViewModel.pageCache.collectAsState()
-
-//    上下偏移
-    var offsetY by remember { mutableStateOf(itemInfo.currentPage.toFloat()) }
-//    缩放
+    var offsetY by remember { mutableStateOf(itemInfo.currentPage.toFloat()) } // ✅ 负值！
     var scale by remember { mutableStateOf(GlobalSettings.getScale()) }
-    // 添加：用于记录菜单是否可见的状态
     var isMenuVisible by remember { mutableStateOf(false) }
-
     var isLoading by remember { mutableStateOf(true) }
 
-
-
-    LaunchedEffect(path) {
+    LaunchedEffect(Unit) {
         isLoading = true
         try {
-            // ✅ 直接获取结果
-            virtualCanvas = comicViewModel.initLoader(context, path)
+            virtualCanvas = comicViewModel.initLoader(context, itemInfo)
         } finally {
             isLoading = false
         }
     }
 
     if (isLoading || virtualCanvas == null) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
     }
-
-
-    if (virtualCanvas == null) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    // ✅ 新增：防抖保存阅读进度
-    LaunchedEffect(offsetY, key, scale) {
-        if (path != null && virtualCanvas != null) {
-            // 防抖：等待 1 秒无变化再保存
-            delay(3000)
-            // 再次检查是否还是同一个 path（避免旧任务覆盖新书）
-            updateItemInfo.updateCurrentPage(currentPage = offsetY.toInt(), key = key)
-            GlobalSettings.setScale(scale)
-        }
-    }
-
-    // 新增：预加载可见页面
-    LaunchedEffect(offsetY, scale, virtualCanvas) {
-        Log.d(TAG, "🔁 LaunchedEffect(offsetY=$offsetY, scale=$scale) triggered")
-        virtualCanvas?.let { canvas ->
-            val visibleTop = -offsetY.toInt()
-            val visibleBottom = visibleTop + 2000 // 屏幕高度+缓冲
-
-            val pagesToLoad = canvas.pageLayouts
-                .filter { it.bottom > visibleTop && it.top < visibleBottom }
-                .map { it.index }
-                .distinct()
-
-            pagesToLoad.forEach { index ->
-                Log.d(TAG, "   → loadPage($index)")
-                comicViewModel.loadPage(index) // 安全：在 LaunchedEffect 中调用
-            }
-        }
-    }
-
 
     val canvas = virtualCanvas!!
 
-    // ✅ 正确方式：用手势控制 offsetY
+    // 保存缩放
+    LaunchedEffect(scale) {
+        delay(3000)
+        GlobalSettings.setScale(scale)
+    }
+
     Box(
-        modifier = modifier
+        Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
+            .pointerInput(canvas) {
                 while (true) {
                     awaitEachGesture {
                         var startTime: Long? = null
@@ -170,6 +124,9 @@ fun VirtualComicCanvas(
                         val panSmoothing = 1.3f  // 平移平滑系数
                         val zoomSmoothing = 0.6f // 缩放平滑系数
 
+                        // 用于记录当前 canvas height
+                        var currentCanvasHeight by mutableStateOf(0)
+
                         do {
                             val event = awaitPointerEvent()
                             // 只有在首次按下时记录 startTime
@@ -177,6 +134,8 @@ fun VirtualComicCanvas(
                                 startTime = System.currentTimeMillis()
                                 if (event.changes.size > 1) isMultiFinger = true
                             }
+                            // 👇 在这里更新 canvas height（每次事件都可能变化）
+                            currentCanvasHeight = size.height
 
                             // 处理移动/缩放
                             when (event.changes.size) {
@@ -193,6 +152,8 @@ fun VirtualComicCanvas(
                                     // 防止画布超出边界
                                     val maxOffset = (canvas.totalHeight * scale - size.height).coerceAtLeast(0f)
                                     offsetY = offsetY.coerceIn(-maxOffset, 0f)
+                                    // 👇 关键：通知 ViewModel
+                                    comicViewModel.onViewportScrolled(offsetY, currentCanvasHeight)
                                 }
                                 2 -> {
                                     isMultiFinger = true
@@ -200,7 +161,7 @@ fun VirtualComicCanvas(
 
                                     // 平滑处理缩放
                                     val smoothedZoom = 1 + (rawZoom - 1) * zoomSmoothing
-                                    scale = (scale * smoothedZoom).coerceIn(0.5f, 5f)
+                                    scale = (scale * smoothedZoom).coerceIn(1f, 5f)
 
                                 }
                             }
@@ -220,49 +181,36 @@ fun VirtualComicCanvas(
                     }
                 }
             }
-
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val drawStart = System.currentTimeMillis()
-            // 计算可见区域（Y 范围）
+        Canvas(Modifier.fillMaxSize()) {
             val visibleTop = -offsetY.toInt()
             val visibleBottom = visibleTop + size.height.toInt()
 
-            // 筛选可见页面
-            val visiblePages = canvas.pageLayouts.filter { page ->
-                page.bottom > visibleTop && page.top < visibleBottom
-            }
+            canvas.pageLayouts
+                .filter { it.bottom > visibleTop && it.top < visibleBottom }
+                .forEach { page ->
+                    pageCache[page.index]?.let { bitmap ->
+                        // 计算缩放后的宽度和高度
+                        val scaledWidth = (page.width * scale).toInt()
+                        val scaledHeight = (page.height * scale).toInt()
+
+                        // 横向居中
+                        val drawX = ((size.width - scaledWidth) / 2f).toInt()
+                        // 纵向位置也需要根据缩放进行调整，这里假设 offsetY 已经考虑了缩放因素
+                        //val drawY = (page.top * scale + offsetY).toInt() // ✅ 正确公式
+                        val drawY = ((page.top + offsetY) * scale).toInt()
 
 
-            // 绘制每一页
-            visiblePages.forEach { page ->
-                pageCache[page.index]?.let { bitmap ->
-                    // 计算缩放后的宽度和高度
-                    val scaledWidth = (page.width * scale).toInt()
-                    val scaledHeight = (page.height * scale).toInt()
-
-                    // 横向居中
-                    val drawX = ((size.width - scaledWidth) / 2f).toInt()
-                    // 纵向位置也需要根据缩放进行调整，这里假设 offsetY 已经考虑了缩放因素
-                    val drawY = ((page.top + offsetY) * scale).toInt()
-
-
-                    drawImage(
-                        image = bitmap,
-                        dstOffset = IntOffset(drawX, drawY),
-                        dstSize = IntSize(scaledWidth, scaledHeight)
-                    )
+                        drawImage(
+                            image = bitmap,
+                            dstOffset = IntOffset(drawX, drawY),
+                            dstSize = IntSize(scaledWidth, scaledHeight)
+                        )
+                    }
                 }
-            }
-            val drawEnd = System.currentTimeMillis()
-            if (drawEnd - drawStart > 50) {
-                Log.d(TAG, "⚠️ Canvas.draw took ${drawEnd - drawStart}ms")
-            }
-
         }
-        // 菜单
+
         if (isMenuVisible) {
-            Log.d(TAG, "🎨 Menu is now VISIBLE → triggering recompose")
             TopReadingMenu(
                 onDismiss = { isMenuVisible = false },
                 modifier = Modifier.align(Alignment.TopCenter)
@@ -271,11 +219,6 @@ fun VirtualComicCanvas(
                 onDismiss = { isMenuVisible = false },
                 modifier = Modifier.align(Alignment.BottomEnd)
             )
-        }else{
-            Log.d(TAG, "🎨 Menu is HIDDEN")
         }
-
     }
 }
-
-

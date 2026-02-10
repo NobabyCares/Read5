@@ -20,6 +20,8 @@ interface ItemInfoRepository {
 
     fun searchById(id: List<Long>): Flow<PagingData<ItemInfo>>
 
+    fun searchByIshow(): Flow<PagingData<ItemInfo>>
+
     suspend fun insert(item: List<ItemInfo>)
     //更新收藏状态
     suspend fun updateByCollect(key: ItemKey, isCollect: Boolean)
@@ -67,6 +69,18 @@ class ItemInfoRepositoryImpl @Inject constructor(
             ),
             pagingSourceFactory = {
                 itemInfoDao.searchById(id)
+            }
+        ).flow
+    }
+
+    override fun searchByIshow(): Flow<PagingData<ItemInfo>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                itemInfoDao.searchByIsShow()
             }
         ).flow
     }

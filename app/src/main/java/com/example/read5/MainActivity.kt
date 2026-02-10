@@ -6,16 +6,12 @@ import androidx.activity.compose.setContent
 import com.example.read5.global.DeviceIdentification
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.MainBookApp
-import com.example.read5.screens.iteminfo.SimpleGestureDemo
 import com.example.read5.ui.theme.Read5Theme
 import dagger.hilt.android.AndroidEntryPoint
 
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // AndroidId初始化

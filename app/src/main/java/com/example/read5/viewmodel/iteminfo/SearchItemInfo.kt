@@ -43,6 +43,10 @@ class SearchItemInfo @Inject constructor(
                     itemInfoRepository.searchByName(source.query.trim()).cachedIn(viewModelScope)  // ✅ 重要
                 }
 
+                is SearchItemDataSource.searchByIsShow ->{
+                    itemInfoRepository.searchByIshow().cachedIn(viewModelScope)  // ✅ 重要
+                }
+
             }
         }
         .stateIn(
@@ -62,6 +66,10 @@ class SearchItemInfo @Inject constructor(
 
     fun searchByCategory(categoryId: Long) {
         _dataSource.value = SearchItemDataSource.searchByCategory(categoryId)
+    }
+
+    fun searchByIsShow() {
+        _dataSource.value = SearchItemDataSource.searchByIsShow(false)
     }
 
 

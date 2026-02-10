@@ -10,7 +10,7 @@ import java.io.File
 import java.util.zip.ZipFile
 
 
-
+//获取目录信息,即图片信息,它顺序,地址等
 class ZipOrFolderLoad(context: Context, path: String) {
      val TAG = "LoadComicPages"
 

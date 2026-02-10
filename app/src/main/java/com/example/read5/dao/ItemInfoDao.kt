@@ -20,7 +20,7 @@ interface ItemInfoDao {
     @Query("SELECT MAX(id) FROM item_info_table")
     suspend fun getMaxId(): Long?
 
-    // 按 category 分页
+    // 按 category 分页,只显示isShow =1的
     @Query("SELECT * FROM item_info_table WHERE category = :categoryId AND isShow = 1")
     fun searchByCategory(categoryId: Long): PagingSource<Int, ItemInfo>
 
@@ -32,6 +32,9 @@ interface ItemInfoDao {
     // ✅ 核心：使用 IN (:ids) 语法
     @Query("SELECT * FROM item_info_table WHERE id IN (:query) AND isShow = 1")
     fun searchById(query: List<Long>): PagingSource<Int, ItemInfo>
+
+    @Query("SELECT * FROM item_info_table where isShow = 0")
+    fun searchByIsShow(): PagingSource<Int, ItemInfo>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(itemInfo: List<ItemInfo>): LongArray

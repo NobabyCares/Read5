@@ -20,7 +20,7 @@ fun BottomBarScreen(navController: NavController) {
     NavigationBar {
         val items = listOf(
             NavItem("书架", "bookshelf"),
-            NavItem("我", "profile/abc123")
+            NavItem("我", "my_view")
         )
 
         items.forEach { item ->
