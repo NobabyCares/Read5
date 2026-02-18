@@ -24,18 +24,18 @@ fun MainBookApp () {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val getItemInViewModel: SearchItemInfo = hiltViewModel()
+    val searchItemInViewModel: SearchItemInfo = hiltViewModel()
     val storeHouseViewModel: StoreHouseViewModel = hiltViewModel()
     val updateItemInfo: UpdateItemInfo = hiltViewModel()
 
     //显示底部导航栏
-    val showBottomBar = currentRoute in listOf("comic_view")
+    val showBottomBar = currentRoute in listOf("comic_view", "horizon_comic_view")
 
     Scaffold(
         topBar = {
             // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
             if (currentRoute == "bookshelf") {
-                TopBar(navController, getItemInViewModel, storeHouseViewModel)
+                TopBar(navController, searchItemInViewModel, storeHouseViewModel)
             }
 
         },
@@ -46,7 +46,7 @@ fun MainBookApp () {
             }
         }
     ) { padding ->
-        MainNavGraph(navController, "bookshelf", padding, getItemInViewModel, storeHouseViewModel)
+        MainNavGraph(navController, "bookshelf", padding, searchItemInViewModel, storeHouseViewModel)
 }
 }
 

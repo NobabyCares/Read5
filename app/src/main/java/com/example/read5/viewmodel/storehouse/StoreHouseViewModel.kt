@@ -43,4 +43,10 @@ class StoreHouseViewModel @Inject constructor(
     fun isShow(s: Boolean){
         _isShow.value = s
     }
+
+    fun deleteStoreHouse(id: Long) {
+        viewModelScope.launch {
+            storeHouseRepository.deleteStoreHouse(id)
+        }
+    }
 }

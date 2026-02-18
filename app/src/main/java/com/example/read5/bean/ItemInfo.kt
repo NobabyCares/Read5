@@ -27,7 +27,7 @@ data class ItemInfo(
 //    id，不做主键，已经有联合主键，用于查询
     var id: Long = 0,
     var name: String = "",
-    var secondName: String = "",
+    var baseCode: String = "",
     var author: String = "",
     var path: String = "",
 //如何去获取这个值?

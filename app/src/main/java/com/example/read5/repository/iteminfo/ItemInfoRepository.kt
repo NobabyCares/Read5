@@ -3,6 +3,7 @@ package com.example.read5.repository.iteminfo
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.PagingSource
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
 import com.example.read5.dao.ItemInfoDao
@@ -20,7 +21,9 @@ interface ItemInfoRepository {
 
     fun searchById(id: List<Long>): Flow<PagingData<ItemInfo>>
 
-    fun searchByIshow(): Flow<PagingData<ItemInfo>>
+    fun searchByIsShow(): Flow<PagingData<ItemInfo>>
+
+    fun searchByIsCollect(): Flow<PagingData<ItemInfo>>
 
     suspend fun insert(item: List<ItemInfo>)
     //更新收藏状态
@@ -73,7 +76,7 @@ class ItemInfoRepositoryImpl @Inject constructor(
         ).flow
     }
 
-    override fun searchByIshow(): Flow<PagingData<ItemInfo>> {
+    override fun searchByIsShow(): Flow<PagingData<ItemInfo>> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
@@ -81,6 +84,18 @@ class ItemInfoRepositoryImpl @Inject constructor(
             ),
             pagingSourceFactory = {
                 itemInfoDao.searchByIsShow()
+            }
+        ).flow
+    }
+
+    override fun searchByIsCollect(): Flow<PagingData<ItemInfo>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                itemInfoDao.searchByIsCollect()
             }
         ).flow
     }

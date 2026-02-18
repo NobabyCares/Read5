@@ -26,7 +26,8 @@ interface  StoreHouseDao {
     @Query("UPDATE store_house_table SET count = :count WHERE id = :id")
     suspend fun updateByCount(id: Long, count: Long)
 
-    // 🔹 删除
-    @Delete
-    suspend fun delete(storeHouse: StoreHouse)
+    // ✅ 推荐：直接按主键删除（高效、安全）
+    @Query("DELETE FROM store_house_table WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
 }

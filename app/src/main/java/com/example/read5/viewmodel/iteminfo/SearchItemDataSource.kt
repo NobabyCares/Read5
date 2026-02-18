@@ -5,4 +5,5 @@ sealed interface SearchItemDataSource {
     data class searchById(val id: List<Long>) : SearchItemDataSource
     data class searchByName(val query: String) : SearchItemDataSource
     data class searchByIsShow(val isShow: Boolean) : SearchItemDataSource
+    data object searchByIsCollect : SearchItemDataSource
 }

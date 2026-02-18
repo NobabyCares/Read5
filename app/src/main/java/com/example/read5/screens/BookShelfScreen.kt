@@ -87,7 +87,7 @@ fun BookShelfScreen(
                         DocumentHolder.setCurrentItem(it)
                         GlobalSettings.addToHistory(it.id)
                         // ✅ 方式1：使用 navigate，确保正确进入栈
-                        navController.navigate("comic_view") {
+                        navController.navigate("horizon_comic_view") {
                             // 重要：不要 popUpTo，这样会保留返回栈
                             launchSingleTop = true
                         }
@@ -104,7 +104,6 @@ fun BookShelfScreen(
                 .height(60.dp),
             color = MaterialTheme.colorScheme.surfaceVariant
         ) {
-            SoundScreen()
         }
 
         if(isImport){

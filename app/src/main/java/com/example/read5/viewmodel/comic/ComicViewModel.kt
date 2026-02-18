@@ -84,6 +84,10 @@ class ComicViewModel @Inject constructor(
                         is ViewportEvent.Scroll -> {
                             preloadPages(event.offsetY, event.currentCanvasHeight)
                         }
+                        is ViewportEvent.Slide -> {
+                            // 👇 触发加载
+                            loadPage(event.index)
+                        }
                     }
                 }
         }
@@ -102,13 +106,11 @@ class ComicViewModel @Inject constructor(
         //加载虚拟画布
         virtualCanvas = BuilderVirtualCanvas.builderVirtualCanvas(sortedPages)
         // ✅ 立即预加载第一页及下一页
-        if(virtualCanvas != null){
-            viewModelScope.launch(Dispatchers.IO) {
-                preloadPages(itemInfo.currentPage.toFloat())
-            }
-            // 👇 激活 saveJob
-            onViewportScrolled(itemInfo.currentPage.toFloat(), 2000)
+        viewModelScope.launch(Dispatchers.IO) {
+            preloadPages(itemInfo.currentPage.toFloat())
         }
+        // 👇 激活 saveJob
+        onViewportScrolled(itemInfo.currentPage.toFloat(), 2000)
         startAutoSave()
         return virtualCanvas
     }
@@ -160,15 +162,15 @@ class ComicViewModel @Inject constructor(
 
 
     private fun loadComicLoader(context: Context, path: String, sortedPages: List<ComicPage>){
-        if(path.substringAfterLast( ".", "") == "zip"){
-            folderOrZipLoader = ComicLoaderZip(
+        folderOrZipLoader = if(path.substringAfterLast( ".", "") == "zip"){
+            ComicLoaderZip(
                 zipPath = path,
                 pageNames = sortedPages,
                 cacheDir = File(context.cacheDir, "comic_cache_${path.hashCode()}"),
                 scope = viewModelScope
             )
         }else{
-            folderOrZipLoader = ComicLoaderFolder(
+            ComicLoaderFolder(
                 path = path,
                 pageNames = sortedPages,
             )
@@ -190,6 +192,12 @@ class ComicViewModel @Inject constructor(
         }
     }
 
+    fun onViewportSlide(index: Int, currentCanvasHeight: Int){
+        viewModelScope.launch {
+            _viewportEvents.emit(ViewportEvent.Slide(index))
+        }
+    }
+
 
     //自动保存的定时任务
     private fun startAutoSave() {
@@ -207,6 +215,4 @@ class ComicViewModel @Inject constructor(
             }
             .launchIn(viewModelScope)
     }
-
-
 }

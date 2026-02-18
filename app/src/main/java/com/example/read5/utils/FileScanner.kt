@@ -4,6 +4,7 @@ import com.example.read5.bean.ItemInfo
 import com.example.read5.utils.HashCalculate.calculateContentBasedHash
 import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Base64
 import java.util.Locale
 
 object FileScanner {
@@ -52,6 +53,7 @@ object FileScanner {
                     val hash = calculateContentBasedHash(current)
                     val itemInfo = ItemInfo(
                         name = current.name,
+                        baseCode = Base64.getEncoder().encodeToString(current.name.toByteArray()),
                         path = current.absolutePath,
                         hash = hash,
                         androidId = "",
@@ -141,6 +143,7 @@ object FileScanner {
         if (hasImage && !nonImageFileFound) {
             return  ItemInfo(
                 name = folder.name,
+                baseCode = Base64.getEncoder().encodeToString(folder.name.toByteArray()),
                 path = folder.absolutePath,
                 hash = hash,
                 androidId = "",

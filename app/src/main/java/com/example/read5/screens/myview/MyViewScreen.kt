@@ -43,9 +43,9 @@ fun MyViewScreen(
     // ✅ 配置式声明所有功能（清晰、易读、易改）
     val features = listOf(
         Feature("hidden", "隐藏内容", Icons.Default.Home, FeatureAction.ShowHiddenItems),
+        Feature("favorites", "收藏夹", Icons.Default.Star, FeatureAction.ShowIsCollectItems),
         //供参考
         /*Feature("history", "阅读历史", Icons.Default.Home, FeatureAction.NavigateTo("reading_history")),
-        Feature("favorites", "收藏夹", Icons.Default.Star, FeatureAction.NavigateTo("favorites")),
         Feature("tags", "标签管理", Icons.Default.Home, FeatureAction.NavigateTo("tags")),
         Feature("settings", "设置", Icons.Default.Settings, FeatureAction.OpenSettings),*/
     )
@@ -57,12 +57,15 @@ fun MyViewScreen(
                 searchItemInfo.searchByIsShow() // 触发数据加载
                 navHostController.navigate("item_not_show")
             }
-            is FeatureAction.NavigateTo -> {
-                navHostController.navigate(action.route)
+            is FeatureAction.ShowIsCollectItems -> {
+                searchItemInfo.searchByIsCollect() // 触发数据加载
+                navHostController.navigate("item_not_show")
             }
             is FeatureAction.OpenSettings -> {
                 // TODO: 打开设置
             }
+
+            is FeatureAction.NavigateTo -> TODO()
         }
     }
 

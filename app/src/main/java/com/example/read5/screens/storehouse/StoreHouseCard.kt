@@ -1,7 +1,9 @@
 package com.example.read5.screens.storehouse
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,17 +26,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.trace
 import com.example.read5.bean.StoreHouse
 import com.example.read5.utils.TimeUitls
 
@@ -44,11 +52,32 @@ fun StoreHouseCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val TAG = "StoreHouseCard"
+
+    var isShowMoreInfoDialg by remember {
+        mutableStateOf(false)
+    }
+
     Column(
         modifier = modifier
             .width(120.dp)
-            .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        onClick()
+                        Log.d(TAG, "短按触发")
+                    },
+                    onLongPress = {
+                        isShowMoreInfoDialg = true
+                        Log.d(TAG, "长按触发")
+                    },
+                    onDoubleTap = {
+                        // 可选：双击支持
+                        Log.d(TAG, "双击触发")
+                    }
+                )
+            }
     ) {
         // === 封面区域 ===
         Box(
@@ -169,6 +198,15 @@ fun StoreHouseCard(
             fontSize = 9.sp,
             color = MaterialTheme.colorScheme.outline,
             maxLines = 1
+        )
+    }
+
+    if(isShowMoreInfoDialg){
+        StoreHouseMoreInfoDialog(
+            storeHouse = storeHouse,
+            onDismiss = {
+                isShowMoreInfoDialg = false
+            }
         )
     }
 }

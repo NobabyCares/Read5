@@ -9,6 +9,7 @@ import com.example.read5.bean.ItemInfo
 import com.example.read5.global.GlobalSettings
 import com.example.read5.repository.iteminfo.ItemInfoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,7 @@ class SearchItemInfo @Inject constructor(
      )
 
     // 2. 使用 stateIn 转换为 StateFlow<PagingData<ItemInfo>>
+    @OptIn(ExperimentalCoroutinesApi::class)
     val items: StateFlow<PagingData<ItemInfo>> = _dataSource
         .flatMapLatest { source ->
             when (source) {
@@ -44,7 +46,11 @@ class SearchItemInfo @Inject constructor(
                 }
 
                 is SearchItemDataSource.searchByIsShow ->{
-                    itemInfoRepository.searchByIshow().cachedIn(viewModelScope)  // ✅ 重要
+                    itemInfoRepository.searchByIsShow().cachedIn(viewModelScope)  // ✅ 重要
+                }
+
+                is SearchItemDataSource.searchByIsCollect ->{
+                    itemInfoRepository.searchByIsCollect().cachedIn(viewModelScope)  // ✅ 重要
                 }
 
             }
@@ -70,6 +76,10 @@ class SearchItemInfo @Inject constructor(
 
     fun searchByIsShow() {
         _dataSource.value = SearchItemDataSource.searchByIsShow(false)
+    }
+
+    fun searchByIsCollect() {
+        _dataSource.value = SearchItemDataSource.searchByIsCollect
     }
 
 

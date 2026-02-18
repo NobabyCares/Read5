@@ -133,7 +133,7 @@ fun ItemInfoScreen(
                 Icon(
                     imageVector = Icons.Filled.Favorite,
                     contentDescription = "Collected",
-                    tint = if (isCollect) Color.Red else Color.Gray,
+                    tint = if (item.isCollect) Color.Red else Color.Gray,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = (-4).dp, y = 4.dp)

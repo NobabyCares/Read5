@@ -2,9 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization) // ✅ 统一使用 Kotlin 2.0.0
     id("com.google.dagger.hilt.android")
-    id("org.jetbrains.kotlin.kapt")
-    kotlin("plugin.serialization") version "1.9.0"
+//    id("org.jetbrains.kotlin.kapt")
+    id("com.google.devtools.ksp") // 👈 新增 KSP 插件
 }
 
 android {
@@ -76,7 +77,7 @@ dependencies {
     * 我这里主要是交互逻辑
     *
     * */
-    implementation("androidx.compose.foundation:foundation")
+    implementation(libs.androidx.foundation)
 
 
     // PDF 查看器
@@ -101,7 +102,7 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     implementation(libs.androidx.storage)
 
-    kapt(libs.androidx.room.compiler) // 或 annotationProcessor
+    ksp(libs.androidx.room.compiler)// 或 annotationProcessor
 
 
     // Kotlin Serialization
@@ -123,7 +124,7 @@ dependencies {
     implementation(libs.dagger.hilt.android)
     implementation(libs.androidx.documentfile)
     androidTestImplementation(libs.androidx.arch.core.testing)
-    kapt(libs.dagger.hilt.compiler)
+    ksp(libs.dagger.hilt.compiler) // ✅ Hilt 的 compiler
     implementation(libs.androidx.hilt.navigation.compose)
 
     // Unit Tests
@@ -140,11 +141,3 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
-
-// Kapt configuration
-kapt {
-    correctErrorTypes = true
-    // 可选：提升注解处理性能
-    useBuildCache = true
-}
-

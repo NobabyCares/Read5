@@ -1,4 +1,4 @@
-package com.example.read5.screens
+package com.example.read5.screens.sortbar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 //音频播放框
 @Composable
-fun SoundScreen() {
+fun SortBarScreen() {
 
     Row(
         modifier = Modifier

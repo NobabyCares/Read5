@@ -2,7 +2,6 @@ package com.example.read5.module
 
 import android.content.Context
 import com.example.read5.dao.ItemInfoDao
-import com.example.read5.dao.ItemInfoDao_Impl
 import com.example.read5.dao.StoreHouseDao
 import com.example.read5.db.AppDatabase
 import com.example.read5.repository.StoreHouseRepository

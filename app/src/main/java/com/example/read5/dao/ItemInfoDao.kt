@@ -36,6 +36,9 @@ interface ItemInfoDao {
     @Query("SELECT * FROM item_info_table where isShow = 0")
     fun searchByIsShow(): PagingSource<Int, ItemInfo>
 
+    @Query("SELECT * FROM item_info_table where isCollect = 1")
+    fun searchByIsCollect(): PagingSource<Int, ItemInfo>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(itemInfo: List<ItemInfo>): LongArray
 

@@ -12,6 +12,8 @@ interface StoreHouseRepository {
 
     //更新总数
     suspend fun updateByCount(id: Long, count: Long)
+
+    suspend fun deleteStoreHouse(id: Long)
 }
 
 class StoreHouseRepositoryImpl @Inject constructor(
@@ -21,5 +23,11 @@ class StoreHouseRepositoryImpl @Inject constructor(
     override suspend fun insert(storeHouse: StoreHouse) = dao.insert(storeHouse)
     override suspend fun updateByCount(id: Long, count: Long) {
         dao.updateByCount(id = id, count = count)
+    }
+
+    override suspend fun deleteStoreHouse(id: Long) {
+        if(id != 1L){
+            dao.deleteById(id)
+        }
     }
 }

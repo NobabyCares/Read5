@@ -2,67 +2,37 @@ package com.example.read5.screens.readview.comic
 
 import android.util.Log
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import com.example.read5.bean.ComicPage
 import com.example.read5.bean.ItemInfo
-import com.example.read5.bean.ItemKey
-import com.example.read5.bean.PageLayout
 import com.example.read5.bean.VirtualCanvas
 import com.example.read5.global.GlobalSettings
 import com.example.read5.singledata.DocumentHolder
 import com.example.read5.utils.comic.GestureUitils
-import com.example.read5.utils.comic.GestureUitils.calculatePan
-import com.example.read5.utils.comic.GestureUitils.calculateZoom
 import com.example.read5.viewmodel.comic.ComicViewModel
-import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import kotlinx.coroutines.delay
-import kotlin.math.hypot
 @Composable
 fun VirtualComicCanvas(navController: NavHostController) {
     val itemInfo = DocumentHolder.requireItem()
@@ -83,10 +53,18 @@ private fun VirtualComicCanvasContent(
 
     var virtualCanvas by remember { mutableStateOf<VirtualCanvas?>(null) }
     val pageCache by comicViewModel.pageCache.collectAsState()
-    var offsetY by remember { mutableStateOf(itemInfo.currentPage.toFloat()) } // ✅ 负值！
-    var scale by remember { mutableStateOf(GlobalSettings.getScale()) }
+
+
+    // ✅ 负值！
+    var offsetY by remember { mutableFloatStateOf(itemInfo.currentPage.toFloat()) }
+    var scale by remember { mutableFloatStateOf(GlobalSettings.getScale()) }
     var isMenuVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
+    // ✅ 新增：记录 Canvas 高度
+    var currentCanvasHeight by remember { mutableIntStateOf(0) }
+    // 平移平滑系数
+    var panSmoothing by remember { mutableFloatStateOf(1f) }
+
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -121,11 +99,7 @@ private fun VirtualComicCanvasContent(
                         var startTime: Long? = null
                         var totalPan = Offset.Zero
                         var isMultiFinger = false
-                        val panSmoothing = 1.3f  // 平移平滑系数
-                        val zoomSmoothing = 0.6f // 缩放平滑系数
 
-                        // 用于记录当前 canvas height
-                        var currentCanvasHeight by mutableStateOf(0)
 
                         do {
                             val event = awaitPointerEvent()
@@ -160,8 +134,7 @@ private fun VirtualComicCanvasContent(
                                     val rawZoom = GestureUitils.calculateZoom(event.changes)
 
                                     // 平滑处理缩放
-                                    val smoothedZoom = 1 + (rawZoom - 1) * zoomSmoothing
-                                    scale = (scale * smoothedZoom).coerceIn(1f, 5f)
+                                    scale = (scale * rawZoom).coerceIn(1f, 5f)
 
                                 }
                             }
@@ -183,6 +156,8 @@ private fun VirtualComicCanvasContent(
             }
     ) {
         Canvas(Modifier.fillMaxSize()) {
+            currentCanvasHeight = size.height.toInt() // ✅ 关键！
+            Log.d("VirtualComic", "📏 Canvas height updated: $currentCanvasHeight")
             val visibleTop = -offsetY.toInt()
             val visibleBottom = visibleTop + size.height.toInt()
 
@@ -197,7 +172,6 @@ private fun VirtualComicCanvasContent(
                         // 横向居中
                         val drawX = ((size.width - scaledWidth) / 2f).toInt()
                         // 纵向位置也需要根据缩放进行调整，这里假设 offsetY 已经考虑了缩放因素
-                        //val drawY = (page.top * scale + offsetY).toInt() // ✅ 正确公式
                         val drawY = ((page.top + offsetY) * scale).toInt()
 
 
@@ -211,12 +185,18 @@ private fun VirtualComicCanvasContent(
         }
 
         if (isMenuVisible) {
-            TopReadingMenu(
-                onDismiss = { isMenuVisible = false },
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
             ButtomReadingMenu(
                 onDismiss = { isMenuVisible = false },
+                readingProgress = (-offsetY) / canvas.totalHeight.toFloat(),
+                panSmoothing = panSmoothing,
+                onProgressChanged = { newProgress ->
+                    // ✅ 正确计算目标偏移量
+                    val targetOffsetY = -(canvas.totalHeight * newProgress.coerceIn(0f, 1f))
+                    offsetY = targetOffsetY
+                    Log.d("ButtomReadingMenu", "🎯 Target offsetY: $offsetY, currentCanvasHeight: ${currentCanvasHeight}")
+                    comicViewModel.onViewportScrolled(offsetY, currentCanvasHeight)
+                },
+                onPanSmoothing = { panSmoothing = it    },
                 modifier = Modifier.align(Alignment.BottomEnd)
             )
         }

@@ -11,6 +11,7 @@ import com.example.read5.screens.BookShelfScreen
 import com.example.read5.screens.CenteredText
 import com.example.read5.screens.myview.IsShowScreen
 import com.example.read5.screens.myview.MyViewScreen
+import com.example.read5.screens.readview.comic.HorizontalComicReader
 import com.example.read5.screens.readview.comic.VirtualComicCanvas
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
@@ -50,6 +51,10 @@ fun MainNavGraph(
 
         composable("comic_view") {
             VirtualComicCanvas(navController)
+        }
+
+        composable("horizon_comic_view") {
+            HorizontalComicReader(navController = navController)
         }
 
     }
