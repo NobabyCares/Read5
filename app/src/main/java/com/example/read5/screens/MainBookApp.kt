@@ -29,7 +29,7 @@ fun MainBookApp () {
     val updateItemInfo: UpdateItemInfo = hiltViewModel()
 
     //显示底部导航栏
-    val showBottomBar = currentRoute in listOf("comic_view", "horizon_comic_view")
+    val showBottomBar = currentRoute in listOf("vertical_comic_view", "horizon_comic_view")
 
     Scaffold(
         topBar = {

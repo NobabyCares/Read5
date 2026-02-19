@@ -43,6 +43,7 @@ class ComicViewModel @Inject constructor(
 
     val TAG = "ComicViewModel"
 
+
     // ✅ 直接缓存 <index, bitmap>，用 immutable map 触发重组
     private val _pageCache = MutableStateFlow<Map<Int, ImageBitmap>>(emptyMap())
     val pageCache: StateFlow<Map<Int, ImageBitmap>> = _pageCache
@@ -52,6 +53,8 @@ class ComicViewModel @Inject constructor(
     var key: ItemKey? = null
     // 在 initLoader 成功后启动,定时保存任务
     private var saveJob: Job? = null
+
+    private var currentOffsetY: Int = 0
 
 
 
@@ -187,15 +190,20 @@ class ComicViewModel @Inject constructor(
     }
     //监听滚动
     fun onViewportScrolled(offsetY: Float, currentCanvasHeight: Int) {
+        currentOffsetY = offsetY.toInt()
         viewModelScope.launch {
             _viewportEvents.emit(ViewportEvent.Scroll(offsetY, currentCanvasHeight))
         }
     }
 
-    fun onViewportSlide(index: Int, currentCanvasHeight: Int){
+    fun onViewportSlide(index: Int){
         viewModelScope.launch {
             _viewportEvents.emit(ViewportEvent.Slide(index))
         }
+    }
+
+    fun updateCurrentPage(currentPage: Int) {
+        currentOffsetY = currentPage
     }
 
 
@@ -204,13 +212,13 @@ class ComicViewModel @Inject constructor(
         key ?: return // 👈 如果 key 还没设置，直接退出
         saveJob?.cancel()
         saveJob = _viewportEvents
-            .filterIsInstance<ViewportEvent.Scroll>()
-            .map { it.offsetY }
+            .map { Unit }
             .sample(5000) // 每5秒
             .onEach { offsetY ->
                 key?.let { key ->
                     // 调用你的数据库更新方法
-                    itemInfoRepository.updateByCurrentPage(currentPage = offsetY.toInt(), key = key)
+                    itemInfoRepository.updateByCurrentPage(currentPage = currentOffsetY, key = key)
+                    itemInfoRepository.updateByLastReadTime(key = key, System.currentTimeMillis())
                 }
             }
             .launchIn(viewModelScope)

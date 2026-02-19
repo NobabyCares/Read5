@@ -12,7 +12,7 @@ import com.example.read5.screens.CenteredText
 import com.example.read5.screens.myview.IsShowScreen
 import com.example.read5.screens.myview.MyViewScreen
 import com.example.read5.screens.readview.comic.HorizontalComicReader
-import com.example.read5.screens.readview.comic.VirtualComicCanvas
+import com.example.read5.screens.readview.comic.VerticalComicReader
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
@@ -49,8 +49,8 @@ fun MainNavGraph(
             IsShowScreen(navHostController = navController, searchItemInfo = searchItemInfo)
         }
 
-        composable("comic_view") {
-            VirtualComicCanvas(navController)
+        composable("vertical_comic_view") {
+            VerticalComicReader(navController)
         }
 
         composable("horizon_comic_view") {

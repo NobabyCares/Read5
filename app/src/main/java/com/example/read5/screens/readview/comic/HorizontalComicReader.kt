@@ -2,6 +2,7 @@ package com.example.read5.screens.readview.comic
 
 import android.app.Activity
 import android.os.Build
+import android.util.Log
 import android.view.View
 import android.view.WindowInsetsController
 import androidx.compose.foundation.Canvas
@@ -32,6 +33,7 @@ import com.example.read5.global.GlobalSettings
 import com.example.read5.singledata.DocumentHolder
 import com.example.read5.viewmodel.comic.ComicViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun HorizontalComicReader(navController: NavHostController) {
@@ -60,20 +62,21 @@ private fun HorizontalComicCanvasContent(
 ) {
     val context = LocalContext.current
     val comicViewModel: ComicViewModel = hiltViewModel()
+    val scope = rememberCoroutineScope() // 👈 用于启动协程
 
     var virtualCanvas by remember { mutableStateOf<VirtualCanvas?>(null) }
     val pageCache by comicViewModel.pageCache.collectAsState()
-    var isLoading by remember { mutableStateOf(true) }
 
-    // ✅ 复用原逻辑：从 currentPage 初始化（注意：原文件是 Float，这里转 Int）
-    var currentPageIndex by remember {
-        mutableIntStateOf(itemInfo.currentPage.coerceAtLeast(0))
-    }
+
+
+
+    var isLoading by remember { mutableStateOf(true) }
+    var currentIndex by remember { mutableIntStateOf(0) }
+    var isMenuVisible by remember { mutableStateOf(false) }
+    var panSmoothing by remember { mutableFloatStateOf(1f) }
 
     // ✅ 缩放状态：和原文件一致
     var scale by remember { mutableFloatStateOf(GlobalSettings.getScale()) }
-
-
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -84,8 +87,6 @@ private fun HorizontalComicCanvasContent(
         }
     }
 
-
-
     if (isLoading || virtualCanvas == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -95,6 +96,14 @@ private fun HorizontalComicCanvasContent(
 
     val canvas = virtualCanvas!!
     val totalPages = canvas.pageLayouts.size
+    // 将保存的 offsetY（Int）转换为页码 index
+    val initialPageIndex = searchByOffsetYPageIndex(itemInfo.currentPage, canvas)
+
+    val currentPageIndex by remember {
+        mutableIntStateOf(initialPageIndex)
+    }
+
+
 
     val pagerState = rememberPagerState(
         initialPage = currentPageIndex.coerceIn(0, totalPages - 1),
@@ -103,19 +112,19 @@ private fun HorizontalComicCanvasContent(
 
     LaunchedEffect(pagerState.currentPage) {
         val current = pagerState.currentPage
+        //这里一定要存储负数,因为在VirtualComicCanvas存储的是偏移量, 而偏移量始终为负数, 所以这里要取负数, 同意数据
+        currentIndex = -1 * canvas.pageLayouts[current].top
         val range = (current - 2)..(current + 2) // 预加载前后 2 页
         range.forEach { index ->
             if (index in 0 until totalPages) {
-                val realPageIndex = canvas.pageLayouts[index].index
                 // 👇 主动触发加载（即使 pageCache 还没被访问）
                 comicViewModel.onViewportSlide(
-                    realPageIndex,
-                    currentCanvasHeight = 2000
+                    index
                 )
             }
         }
+        comicViewModel.updateCurrentPage(currentIndex)
     }
-
 
 
 
@@ -123,8 +132,6 @@ private fun HorizontalComicCanvasContent(
         delay(3000)
         GlobalSettings.setScale(scale)
     }
-
-
 
     Box(
         modifier = Modifier
@@ -137,6 +144,7 @@ private fun HorizontalComicCanvasContent(
                         scale = if (scale > 1.1f) 1f else 2f
                     },
                     onTap = {
+                        isMenuVisible = !isMenuVisible
                     }
                 )
             }
@@ -161,7 +169,24 @@ private fun HorizontalComicCanvasContent(
                 color = Color.White
             )
         }
+        if (isMenuVisible) {
+            HorizontalMenu(
+                navController,
+                readingProgress = (pagerState.currentPage/ canvas.pageLayouts.size.toFloat()),
+                panSmoothing = panSmoothing,
+                onProgressChanged = { newProgress ->
+                    // ✅ 正确计算目标偏移量
+                    val targetOffsetY = -(canvas.totalHeight * newProgress.coerceIn(0f, 1f)).toInt()
+                    scope.launch {
+                        pagerState.animateScrollToPage(searchByOffsetYPageIndex(targetOffsetY, canvas))
+                    }
+                },
+                onPanSmoothing = { panSmoothing = it    },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
     }
+
 }
 
 @Composable
@@ -198,5 +223,16 @@ private fun PageItem(
                 )
             }
         }
+    }
+}
+
+fun searchByOffsetYPageIndex(offsetY: Int, canvas: VirtualCanvas):Int {
+    return run {
+        //这数据库存储的是offsetY的偏差，他本身是负数，但是canvas是按照正数排序的，所以转换一下
+        val visibleTop = -1 * offsetY
+        canvas.pageLayouts
+            .indexOfFirst { it.top >= visibleTop }
+            .takeIf { it >= 0 }
+            ?: (canvas.pageLayouts.size - 1)
     }
 }

@@ -32,6 +32,8 @@ interface ItemInfoRepository {
     suspend fun updateByCurrentPage(key: ItemKey, currentPage: Int)
     //更新隐藏状态
     suspend fun updateByIsShow(key: ItemKey, isShow: Boolean): Int
+    //更新阅读时间
+    suspend fun updateByLastReadTime(key: ItemKey, lastReadTime: Long)
 
 
 }
@@ -115,6 +117,10 @@ class ItemInfoRepositoryImpl @Inject constructor(
 
     override suspend fun updateByIsShow(key: ItemKey, isShow: Boolean): Int {
         return itemInfoDao.updateByIsShow(isShow = isShow,path = key.path, hash = key.hash, androidId = key.androidId)
+    }
+
+    override suspend fun updateByLastReadTime(key: ItemKey, lastReadTime: Long) {
+        itemInfoDao.updateByLastReadTime(path = key.path, hash = key.hash, androidId = key.androidId, lastReadTime)
     }
 }
 

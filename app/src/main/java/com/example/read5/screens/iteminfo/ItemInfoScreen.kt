@@ -159,6 +159,14 @@ fun ItemInfoScreen(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            Text(
+                text = item.lastReadTimeFormatted,
+                modifier = Modifier.padding(top = 4.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             if (item.author.isNotEmpty()) {
                 Text(
                     text = item.author,

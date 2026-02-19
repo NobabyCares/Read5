@@ -53,6 +53,8 @@ interface ItemInfoDao {
     @Query("UPDATE item_info_table SET isShow = :isShow WHERE path = :path AND hash = :hash AND androidId = :androidId")
     suspend fun updateByIsShow(path: String, hash: String, androidId: String, isShow: Boolean): Int
 
+    @Query("UPDATE item_info_table SET lastReadTime = :lastReadTime WHERE path = :path AND hash = :hash AND androidId = :androidId ")
+    suspend fun updateByLastReadTime(path: String, hash: String, androidId: String, lastReadTime: Long)
     // 👇 新增：带 ID 分配的批量插入（关键！）
     @Transaction
     suspend fun insertAllWithAutoId(items: List<ItemInfo>): LongArray { // 👈 返回 LongArray

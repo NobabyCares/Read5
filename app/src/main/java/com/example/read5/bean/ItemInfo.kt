@@ -4,6 +4,9 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import com.example.read5.global.DeviceIdentification
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 @Entity(
@@ -39,9 +42,10 @@ data class ItemInfo(
 // 如果为false 就是默认渲染第一页,如果为true, 就在应用文件夹cover选择名为"id.jpg"的图片
     var cover: Boolean =false,
 //    创建时间
-    var createTime: String = "",
+    var createTime: Long = 0L,
 //    最后阅读时间
-    var lastReadTime: String = "",
+    var lastReadTime: Long = 0L,
+//    创建时间
 //    进度
     var schedule:Int = 0,
 //    黑名单,默认true 显示, 反之隐藏
@@ -56,6 +60,22 @@ data class ItemInfo(
 //    文件大小
     var fileSize: Long = 0,
     val fileType : String = ""
-)
+){
+    // ✅ 添加一个可读时间字符串（基于 lastReadTime）
+    val lastReadTimeFormatted: String
+        get() = if (lastReadTime > 0) {
+            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(lastReadTime))
+        } else {
+            ""
+        }
+
+    // ✅ 同样可以为 createTime 添加
+    val createTimeFormatted: String
+        get() = if (createTime > 0) {
+            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(createTime))
+        } else {
+            ""
+        }
+}
 
 

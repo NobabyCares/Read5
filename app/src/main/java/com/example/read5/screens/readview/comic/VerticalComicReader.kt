@@ -34,7 +34,7 @@ import com.example.read5.utils.comic.GestureUitils
 import com.example.read5.viewmodel.comic.ComicViewModel
 import kotlinx.coroutines.delay
 @Composable
-fun VirtualComicCanvas(navController: NavHostController) {
+fun VerticalComicReader(navController: NavHostController) {
     val itemInfo = DocumentHolder.requireItem()
 
     // 关键：用 key 保证切换漫画时状态重置
@@ -185,8 +185,8 @@ private fun VirtualComicCanvasContent(
         }
 
         if (isMenuVisible) {
-            ButtomReadingMenu(
-                onDismiss = { isMenuVisible = false },
+            VerticalMenu(
+                navController,
                 readingProgress = (-offsetY) / canvas.totalHeight.toFloat(),
                 panSmoothing = panSmoothing,
                 onProgressChanged = { newProgress ->

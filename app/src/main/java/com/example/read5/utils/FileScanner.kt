@@ -1,6 +1,10 @@
 package com.example.read5.utils
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.example.read5.bean.ItemInfo
+import com.example.read5.global.DeviceIdentification
+import com.example.read5.global.GlobalSettings
 import com.example.read5.utils.HashCalculate.calculateContentBasedHash
 import java.io.File
 import java.text.SimpleDateFormat
@@ -17,6 +21,7 @@ object FileScanner {
 //图片类型
     private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "bmp", "gif")
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun loadFile(extensions: Set<String>, category: Long, content: List<String>): List<ItemInfo>{
         var result = mutableListOf<ItemInfo>()
         if(extensions.isNotEmpty()){
@@ -30,6 +35,7 @@ object FileScanner {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun findFileByExtensions(
         extensions: Set<String> = setOf("epub", "mobi", "pdf", "azw", "azw3"),
         category: Long,
@@ -56,8 +62,8 @@ object FileScanner {
                         baseCode = Base64.getEncoder().encodeToString(current.name.toByteArray()),
                         path = current.absolutePath,
                         hash = hash,
-                        androidId = "",
-                        createTime = formatter.format(current.lastModified()),
+                        androidId = DeviceIdentification.androidId,
+                        createTime = current.lastModified(),
                         fileSize = current.length(),
                         fileType = current.name.substringAfterLast('.', "").lowercase(),
                         category = category,
@@ -70,7 +76,8 @@ object FileScanner {
     }
 
 //    通过文件夹查找漫画文件
-    fun findComicBooksByFolder(path: String, category: Long): List<ItemInfo>{
+@RequiresApi(Build.VERSION_CODES.O)
+fun findComicBooksByFolder(path: String, category: Long): List<ItemInfo>{
         val result = mutableListOf<ItemInfo>()
         val root = File(path)
 
@@ -109,6 +116,7 @@ object FileScanner {
     }
 
     // 分析单个文件夹的函数
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun analyzeFolder(folder: File, category: Long): ItemInfo? {
         val files = folder.listFiles() ?: return null
         if (files.isEmpty()) return null // 空文件夹不算
@@ -146,8 +154,8 @@ object FileScanner {
                 baseCode = Base64.getEncoder().encodeToString(folder.name.toByteArray()),
                 path = folder.absolutePath,
                 hash = hash,
-                androidId = "",
-                createTime = formatter.format(folder.lastModified()),
+                androidId = DeviceIdentification.androidId,
+                createTime = folder.lastModified(),
                 fileSize = folder.length(),
                 fileType = "folder",
                 category = category,
