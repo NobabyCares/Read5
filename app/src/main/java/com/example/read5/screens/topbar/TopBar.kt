@@ -33,9 +33,6 @@ fun TopBar(navController: NavController,
     //选择标签高亮
     var selectedTab by remember { mutableStateOf(0) }
 
-    //viewmodel
-
-    //    搜索控制
 
     Row(
         modifier = Modifier
@@ -78,7 +75,7 @@ fun TopBar(navController: NavController,
                                 selectedTab = index
                                 when (tabName){
                                     "历史记录" -> {
-                                        searchItemInfo.searchById(GlobalSettings.getHistory())
+                                        searchItemInfo.history()
                                         storeHouseViewModel.isShow(false)
                                     }
                                     "书桌" -> {

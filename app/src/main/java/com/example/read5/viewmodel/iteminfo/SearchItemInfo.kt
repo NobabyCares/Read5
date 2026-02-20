@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -59,6 +60,14 @@ class SearchItemInfo @Inject constructor(
                     itemInfoRepository.sortBySortField(source.name, source.ascending, source.category).cachedIn(viewModelScope)  // ✅ 重要
                 }
 
+                // 新增：处理历史记录
+                is SearchItemDataSource.history -> {
+                    flow {
+                        val historyList = GlobalSettings.getHistory()
+                        emit(PagingData.from(historyList))
+                    }.cachedIn(viewModelScope)
+                }
+
             }
         }
         .stateIn(
@@ -66,7 +75,9 @@ class SearchItemInfo @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = PagingData.empty()
         )
-
+    fun history() {
+        _dataSource.value = SearchItemDataSource.history()
+    }
     //搜索名字
     fun searchByName(newQuery: String) {
             _dataSource.value = SearchItemDataSource.searchByName(newQuery)

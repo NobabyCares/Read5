@@ -4,6 +4,7 @@ package com.example.read5.global
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.example.read5.bean.ItemInfo
 import kotlinx.coroutines.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
@@ -14,7 +15,7 @@ import kotlin.concurrent.write
 
 @Serializable
 data class Config(
-    var history: List<Long> = emptyList(),
+    var historyItems: List<ItemInfo> = emptyList(),
     var recentStoreHouse: Long = 1L,
     var scale: Float = 1f,
     var readMode: String = "horizon_comic_view",
@@ -26,6 +27,8 @@ object GlobalSettings {
     private lateinit var context: Context
     private val json = Json { ignoreUnknownKeys = true }
     private lateinit var configFile: File
+
+    private val MAX_HISTORY_SIZE = 150
 
     // 内存中的配置（受读写锁保护）
     private var config = Config()
@@ -86,7 +89,14 @@ object GlobalSettings {
 
     // ———————— 公共 API ————————
 
-    fun getHistory(): List<Long> = read { it.history }
+    /**
+     * 获取历史记录（最新优先）
+     * LinkedHashSet 保持插入顺序，所以最后插入的在最后
+     * 反转后就是最新在前
+     */
+    fun getHistory(): List<ItemInfo> = read {
+        config.historyItems.reversed()
+    }
     fun getRecentStoreHouse(): Long = read { it.recentStoreHouse }
     fun getScale(): Float = read { it.scale }
 
@@ -106,16 +116,36 @@ object GlobalSettings {
     fun setSlidingSpeed(speed: Float) {
         write { it.panSmoothing = speed } // 可选：限制滑动速度范围
     }
-    fun addToHistory(itemId: Long) {
+
+    /**
+     * 添加项目到历史记录
+     * 使用 LinkedHashSet 保持插入顺序 + 自动去重
+     */
+    fun addToHistory(item: ItemInfo) {
         write { config ->
-            // 去重 + 移到最前
-            val newHistory = buildList {
-                add(itemId)
-                addAll(config.history.filter { it != itemId })
-                // 可选：限制历史长度（比如最多 20 条）
-                if (size > 20) removeAt(20)
+            // 将 List 转换为 LinkedHashSet 进行操作
+            val linkedSet = LinkedHashSet(config.historyItems)
+
+            // 更新最后阅读时间
+            val updatedItem = item.copy(lastReadTime = System.currentTimeMillis())
+
+            // 先移除再添加（相当于移动到最新位置）
+            linkedSet.remove(updatedItem)
+            linkedSet.add(updatedItem)
+
+            // 限制大小，移除最旧的
+            if (linkedSet.size > MAX_HISTORY_SIZE) {
+                val iterator = linkedSet.iterator()
+                repeat(linkedSet.size - MAX_HISTORY_SIZE) {
+                    if (iterator.hasNext()) {
+                        iterator.next()  // 第一个是最旧的
+                        iterator.remove()
+                    }
+                }
             }
-            config.history = newHistory
+
+            // 保存回 config
+            config.historyItems = linkedSet.toList()
         }
     }
 

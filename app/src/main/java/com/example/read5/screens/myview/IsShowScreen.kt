@@ -41,7 +41,7 @@ fun IsShowScreen(
                         // ✅ 关键：对路径进行 URL 编码
                         // ✅ 关键：使用 Uri.encode()，不是 URLEncoder！
                         DocumentHolder.setCurrentItem(it)
-                        GlobalSettings.addToHistory(it.id)
+                        GlobalSettings.addToHistory(it)
                         // ✅ 方式1：使用 navigate，确保正确进入栈
                         navHostController.navigate(GlobalSettings.getReadMode()) {
                             // 重要：不要 popUpTo，这样会保留返回栈

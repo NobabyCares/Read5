@@ -9,5 +9,6 @@ sealed interface SearchItemDataSource {
     data class searchByName(val query: String) : SearchItemDataSource
     data class searchByIsShow(val isShow: Boolean) : SearchItemDataSource
     data object searchByIsCollect : SearchItemDataSource
+    data class history(val limit: Int = 150) : SearchItemDataSource
     data class sortByField(val name: SortField, val ascending: Boolean, val category: Long ) : SearchItemDataSource
 }
