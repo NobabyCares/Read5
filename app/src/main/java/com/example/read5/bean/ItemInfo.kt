@@ -45,7 +45,8 @@ data class ItemInfo(
     var createTime: Long = 0L,
 //    最后阅读时间
     var lastReadTime: Long = 0L,
-//    创建时间
+//    总的阅读时间，单位秒
+    var totalReadTime: Long = 0L,
 //    进度
     var schedule:Int = 0,
 //    黑名单,默认true 显示, 反之隐藏

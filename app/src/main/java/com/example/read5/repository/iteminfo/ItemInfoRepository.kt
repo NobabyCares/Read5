@@ -7,6 +7,7 @@ import androidx.paging.PagingSource
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
 import com.example.read5.dao.ItemInfoDao
+import com.example.read5.screens.sortbar.SortField
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,15 +26,25 @@ interface ItemInfoRepository {
 
     fun searchByIsCollect(): Flow<PagingData<ItemInfo>>
 
+
     suspend fun insert(item: List<ItemInfo>)
     //更新收藏状态
     suspend fun updateByCollect(key: ItemKey, isCollect: Boolean)
-    // 只更新阅读进度
+    // 只更新阅读位置
     suspend fun updateByCurrentPage(key: ItemKey, currentPage: Int)
     //更新隐藏状态
     suspend fun updateByIsShow(key: ItemKey, isShow: Boolean): Int
     //更新阅读时间
     suspend fun updateByLastReadTime(key: ItemKey, lastReadTime: Long)
+    //更新进度
+    suspend fun updateBySchedule(key: ItemKey, schedule: Int)
+    //更新总的阅读时间
+    suspend fun updateByTotalReadTime(key: ItemKey, totalReadTime: Long)
+    //排序方法
+    fun sortBySortField(sortField: SortField, ascending: Boolean, category: Long): Flow<PagingData<ItemInfo>>
+
+
+
 
 
 }
@@ -102,6 +113,27 @@ class ItemInfoRepositoryImpl @Inject constructor(
         ).flow
     }
 
+    override fun sortBySortField(
+        sortField: SortField,
+        ascending: Boolean,
+        category: Long
+    ): Flow<PagingData<ItemInfo>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                when(sortField){
+                    SortField.NAME -> if (ascending) itemInfoDao.sortByNameASC(category) else itemInfoDao.sortByNameDesc(category)
+                    SortField.LAST_READ_TIME -> if(ascending) itemInfoDao.sortByLastReadTimeASC(category) else itemInfoDao.sortByLastReadTimeDESC(category)
+                    SortField.READ_PROGRESS -> if(ascending) itemInfoDao.sortByScheduleASC(category) else itemInfoDao.sortByScheduleDESC(category)
+                    SortField.TOTAL_READ_TIME -> if(ascending) itemInfoDao.sortByTotalReadTimeASC(category) else itemInfoDao.sortByTotalReadTimeDESC(category)
+                }
+            }
+        ).flow
+    }
+
 
     override suspend fun insert(item: List<ItemInfo>) {
         itemInfoDao.insertAllWithAutoId(item)
@@ -121,6 +153,14 @@ class ItemInfoRepositoryImpl @Inject constructor(
 
     override suspend fun updateByLastReadTime(key: ItemKey, lastReadTime: Long) {
         itemInfoDao.updateByLastReadTime(path = key.path, hash = key.hash, androidId = key.androidId, lastReadTime)
+    }
+
+    override suspend fun updateBySchedule(key: ItemKey, schedule: Int) {
+        itemInfoDao.updateBySchedule(path = key.path, hash = key.hash, androidId = key.androidId, schedule =  schedule)
+    }
+
+    override suspend fun updateByTotalReadTime(key: ItemKey, totalReadTime: Long) {
+        itemInfoDao.updateByTotalReadTime(path = key.path, hash = key.hash, androidId = key.androidId, totalReadTime)
     }
 }
 

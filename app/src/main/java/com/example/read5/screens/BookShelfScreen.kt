@@ -23,6 +23,7 @@ import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.iteminfo.ItemInfoScreen
+import com.example.read5.screens.sortbar.SortBarScreen
 import com.example.read5.screens.storehouse.StoreHouseCard
 import com.example.read5.screens.storehouse.StoreHouseInputDialog
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
@@ -49,8 +50,9 @@ fun BookShelfScreen(
 
     //ItemInfo 数据收集
     //这个是展示数据,可能是搜索数据,也可能是全部数据
-    searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
     val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
+    searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
+
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -79,6 +81,7 @@ fun BookShelfScreen(
                 }
 
             }else{
+                val readMode = GlobalSettings.getReadMode()
                 items(itemInfos.itemCount) { index ->
                     itemInfos[index]?.let { ItemInfoScreen(it, onToView = {
                         // ✅ 正确：触发导航，传递必要的参数
@@ -88,7 +91,7 @@ fun BookShelfScreen(
                         GlobalSettings.addToHistory(it.id)
                         // ✅ 方式1：使用 navigate，确保正确进入栈
 
-                       navController.navigate("horizon_comic_view") {
+                       navController.navigate(readMode) {
                             // 重要：不要 popUpTo，这样会保留返回栈
                             launchSingleTop = true
                         }
@@ -98,14 +101,10 @@ fun BookShelfScreen(
 
         }
 
-        // 底部播放条
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-        }
+        SortBarScreen(
+            GlobalSettings.getRecentStoreHouse(),
+            searchItemInfo = searchItemInfo
+        )
 
         if(isImport){
             StoreHouseInputDialog { isImport = false }

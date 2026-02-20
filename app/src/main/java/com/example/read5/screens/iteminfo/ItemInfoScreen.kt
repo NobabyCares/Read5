@@ -167,6 +167,22 @@ fun ItemInfoScreen(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            Text(
+                text = (item.schedule * -1).toString() + "%",
+                modifier = Modifier.padding(top = 4.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = formatMillisecondsToHMS(item.totalReadTime),
+                modifier = Modifier.padding(top = 4.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1, // 👈 建议改为 1 行（"1h 23m" 不需要两行）
+                overflow = TextOverflow.Ellipsis
+            )
             if (item.author.isNotEmpty()) {
                 Text(
                     text = item.author,
@@ -194,16 +210,7 @@ fun ItemInfoScreen(
                         color = Color.Black
                     )
                 }
-                val progressText = if (item.totalPage > 0) {
-                    "${item.currentPage}/${item.totalPage}"
-                } else {
-                    "${item.schedule}%"
-                }
-                Text(
-                    text = progressText,
-                    fontSize = 8.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
+
             }
         }
 
@@ -222,4 +229,25 @@ fun getColorFromTitle(title: String): Color {
     val g = ((hash ushr 8) and 0xFF).toFloat() / 255f
     val b = ((hash ushr 16) and 0xFF).toFloat() / 255f
     return Color(r, g, b)
+}
+fun formatMillisecondsToHMS(milliseconds: Long): String {
+    if (milliseconds <= 0) return "0秒"
+
+    val totalSeconds = milliseconds / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return buildString {
+        if (hours > 0) {
+            append("${hours}小时")
+        }
+        if (minutes > 0) {
+            append("${minutes}分")
+        }
+        if (seconds > 0 || (hours.toInt() == 0 && minutes.toInt() == 0)) {
+            // 如果只有秒，或者全为0（但前面已处理 <=0），确保至少显示秒
+            append("${seconds}秒")
+        }
+    }
 }

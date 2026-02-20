@@ -7,23 +7,28 @@ import android.view.View
 import android.view.WindowInsetsController
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -60,15 +65,17 @@ private fun HorizontalComicCanvasContent(
     navController: NavHostController,
     itemInfo: ItemInfo
 ) {
+    val TAG = "HorizontalComicCanvasContent"
     val context = LocalContext.current
     val comicViewModel: ComicViewModel = hiltViewModel()
-    val scope = rememberCoroutineScope() // 👈 用于启动协程
+
+    //获取背景颜色
+    var backgroundColor by remember { mutableStateOf(GlobalSettings.getBackgroundColor()) }
+    // 👈 用于启动协程
+    val scope = rememberCoroutineScope()
 
     var virtualCanvas by remember { mutableStateOf<VirtualCanvas?>(null) }
     val pageCache by comicViewModel.pageCache.collectAsState()
-
-
-
 
     var isLoading by remember { mutableStateOf(true) }
     var currentIndex by remember { mutableIntStateOf(0) }
@@ -103,8 +110,6 @@ private fun HorizontalComicCanvasContent(
         mutableIntStateOf(initialPageIndex)
     }
 
-
-
     val pagerState = rememberPagerState(
         initialPage = currentPageIndex.coerceIn(0, totalPages - 1),
         pageCount = { totalPages }
@@ -118,86 +123,143 @@ private fun HorizontalComicCanvasContent(
         range.forEach { index ->
             if (index in 0 until totalPages) {
                 // 👇 主动触发加载（即使 pageCache 还没被访问）
-                comicViewModel.onViewportSlide(
-                    index
-                )
+                comicViewModel.onViewportSlide(index)
             }
         }
         comicViewModel.updateCurrentPage(currentIndex)
+        Log.d(TAG, "Current page changed to: $current, currentIndex: $currentIndex")
     }
-
-
 
     LaunchedEffect(scale) {
         delay(3000)
         GlobalSettings.setScale(scale)
     }
 
+    // 使用 Box 作为最外层容器，分离手势区域
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onDoubleTap = {
-                        // 双击切换缩放
-                        scale = if (scale > 1.1f) 1f else 2f
-                    },
-                    onTap = {
-                        isMenuVisible = !isMenuVisible
-                    }
-                )
-            }
+            .background(backgroundColor)
     ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            key = { index -> canvas.pageLayouts[index].index }
-        ) { pageIndex ->
-            val bitmap = pageCache[canvas.pageLayouts[pageIndex].index]
-            PageItem(bitmap = bitmap)
+        // ===== 区域1：画布区域（处理手势）=====
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    var startTime: Long? = null
+                    var isMultiFinger = false
+
+                    detectTapGestures(
+                        onDoubleTap = {
+                            // 双击切换缩放
+                            scale = if (scale > 1.1f) 1f else 2f
+                            Log.d(TAG, "Double tap detected, scale: $scale")
+                        },
+                        onTap = {
+                            // 单点击切换菜单可见性
+                            val duration = if (startTime != null) System.currentTimeMillis() - startTime else 0L
+                            if (!isMultiFinger && duration <= 250) {
+                                isMenuVisible = !isMenuVisible
+                                Log.d(TAG, "Tap detected, menu visible: $isMenuVisible")
+                            }
+                        },
+                        onLongPress = {
+                            Log.d(TAG, "Long press detected")
+                        }
+                    )
+                }
+        ) {
+            // HorizontalPager 内容
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { index -> canvas.pageLayouts[index].index }
+            ) { pageIndex ->
+                val bitmap = pageCache[canvas.pageLayouts[pageIndex].index]
+                PageItem(bitmap = bitmap, backgroundColor = backgroundColor)
+            }
         }
 
-        // 页码指示器
+        // ===== 区域2：菜单区域（单独一层，消费事件）=====
+        if (isMenuVisible) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    // 关键：菜单区域消费所有触摸事件，防止穿透到画布
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            do {
+                                val event = awaitPointerEvent()
+                                // 消费所有事件，不让它们传递到下层
+                                event.changes.forEach { it.consume() }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    }
+            ) {
+                HorizontalMenu(
+                    navController = navController,
+                    backgroundColor = backgroundColor,
+                    readingProgress = (pagerState.currentPage / canvas.pageLayouts.size.toFloat()),
+                    panSmoothing = panSmoothing,
+                    onProgressChanged = { newProgress ->
+                        val targetPage = (newProgress * (totalPages - 1)).coerceIn(0f, (totalPages - 1).toFloat()).toInt()
+                        scope.launch {
+                            pagerState.animateScrollToPage(targetPage)
+                            Log.d(TAG, "Progress changed to: $newProgress, target page: $targetPage")
+                        }
+                    },
+                    onPanSmoothing = {
+                        panSmoothing = it
+                        Log.d(TAG, "Pan smoothing changed to: $it")
+                    },
+                    onBackgroundColorChanged = {
+                        backgroundColor = it
+                        GlobalSettings.setBackgroundColor(it)
+                        Log.d(TAG, "Background color changed to: $it")
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
+        }
+
+        // 页码指示器（始终显示）
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(8.dp)
+                .padding(bottom = if (isMenuVisible) 130.dp else 8.dp) // 菜单显示时上移
+                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
             Text(
                 text = "${pagerState.currentPage + 1} / $totalPages",
-                color = Color.White
-            )
-        }
-        if (isMenuVisible) {
-            HorizontalMenu(
-                navController,
-                readingProgress = (pagerState.currentPage/ canvas.pageLayouts.size.toFloat()),
-                panSmoothing = panSmoothing,
-                onProgressChanged = { newProgress ->
-                    // ✅ 正确计算目标偏移量
-                    val targetOffsetY = -(canvas.totalHeight * newProgress.coerceIn(0f, 1f)).toInt()
-                    scope.launch {
-                        pagerState.animateScrollToPage(searchByOffsetYPageIndex(targetOffsetY, canvas))
-                    }
-                },
-                onPanSmoothing = { panSmoothing = it    },
-                modifier = Modifier.align(Alignment.BottomEnd)
+                color = Color.White,
+                fontSize = 14.sp
             )
         }
     }
-
 }
 
 @Composable
 private fun PageItem(
     bitmap: ImageBitmap?,
+    backgroundColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+    ) {
         if (bitmap == null) {
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color.White)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(48.dp)
+                )
             }
         } else {
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -226,7 +288,7 @@ private fun PageItem(
     }
 }
 
-fun searchByOffsetYPageIndex(offsetY: Int, canvas: VirtualCanvas):Int {
+fun searchByOffsetYPageIndex(offsetY: Int, canvas: VirtualCanvas): Int {
     return run {
         //这数据库存储的是offsetY的偏差，他本身是负数，但是canvas是按照正数排序的，所以转换一下
         val visibleTop = -1 * offsetY

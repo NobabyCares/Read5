@@ -44,6 +44,7 @@ fun MyViewScreen(
     val features = listOf(
         Feature("hidden", "隐藏内容", Icons.Default.Home, FeatureAction.ShowHiddenItems),
         Feature("favorites", "收藏夹", Icons.Default.Star, FeatureAction.ShowIsCollectItems),
+        Feature("password", "设置密码", Icons.Default.Star, FeatureAction.SimplePassword),
         //供参考
         /*Feature("history", "阅读历史", Icons.Default.Home, FeatureAction.NavigateTo("reading_history")),
         Feature("tags", "标签管理", Icons.Default.Home, FeatureAction.NavigateTo("tags")),
@@ -60,6 +61,9 @@ fun MyViewScreen(
             is FeatureAction.ShowIsCollectItems -> {
                 searchItemInfo.searchByIsCollect() // 触发数据加载
                 navHostController.navigate("item_not_show")
+            }
+            is FeatureAction.SimplePassword -> {
+                navHostController.navigate("simple_password")
             }
             is FeatureAction.OpenSettings -> {
                 // TODO: 打开设置

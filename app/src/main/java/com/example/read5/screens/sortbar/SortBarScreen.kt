@@ -13,49 +13,62 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-//音频播放框
+import com.example.read5.viewmodel.iteminfo.SearchItemInfo
+
+
 @Composable
-fun SortBarScreen() {
+fun SortBarScreen(
+    category: Long ,
+    searchItemInfo: SearchItemInfo,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var currentSort by remember { mutableStateOf<SortOption>(SortOption.default) }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Gray)
+    Box(modifier = modifier.fillMaxWidth()) {
+        Button(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "排序: ${currentSort.label}",
+                style = MaterialTheme.typography.labelMedium
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text("哲学性自杀", fontSize = 14.sp, maxLines = 1)
-                Text("20:02 / 42:38", fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
-            }
         }
-        Row {
-            IconButton(onClick = { }) {
-                Icon(Icons.Filled.Home, contentDescription = "播放占位") // ✅ Home
-            }
-            IconButton(onClick = { }) {
-                Icon(Icons.Filled.Home, contentDescription = "关闭占位") // ✅ Home
-            }
 
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SortOption.all.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label) },
+                    onClick = {
+                        currentSort = option
+                        expanded = false
+                        searchItemInfo.sortBySortField(option, category = category)
+                    }
+                )
+            }
         }
     }
 }

@@ -43,7 +43,7 @@ fun IsShowScreen(
                         DocumentHolder.setCurrentItem(it)
                         GlobalSettings.addToHistory(it.id)
                         // ✅ 方式1：使用 navigate，确保正确进入栈
-                        navHostController.navigate("comic_view") {
+                        navHostController.navigate(GlobalSettings.getReadMode()) {
                             // 重要：不要 popUpTo，这样会保留返回栈
                             launchSingleTop = true
                         }

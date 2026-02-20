@@ -8,6 +8,8 @@ import androidx.paging.cachedIn
 import com.example.read5.bean.ItemInfo
 import com.example.read5.global.GlobalSettings
 import com.example.read5.repository.iteminfo.ItemInfoRepository
+import com.example.read5.screens.sortbar.SortField
+import com.example.read5.screens.sortbar.SortOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +55,10 @@ class SearchItemInfo @Inject constructor(
                     itemInfoRepository.searchByIsCollect().cachedIn(viewModelScope)  // ✅ 重要
                 }
 
+                is SearchItemDataSource.sortByField ->{
+                    itemInfoRepository.sortBySortField(source.name, source.ascending, source.category).cachedIn(viewModelScope)  // ✅ 重要
+                }
+
             }
         }
         .stateIn(
@@ -81,8 +87,8 @@ class SearchItemInfo @Inject constructor(
     fun searchByIsCollect() {
         _dataSource.value = SearchItemDataSource.searchByIsCollect
     }
-
-
-
-
+    fun sortBySortField(sortOption: SortOption, category: Long) {
+        //ascending: true 升序, false 降序
+        _dataSource.value = SearchItemDataSource.sortByField(sortOption.field, sortOption.ascending, category)
+    }
 }

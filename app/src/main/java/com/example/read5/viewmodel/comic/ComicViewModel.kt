@@ -21,6 +21,7 @@ import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @HiltViewModel
 class ComicViewModel @Inject constructor(
@@ -51,11 +54,14 @@ class ComicViewModel @Inject constructor(
     private val _viewportEvents = MutableSharedFlow<ViewportEvent>(replay = 0, extraBufferCapacity = 5)
     //    key,用于数据库更新，因为数据库是联合主键
     var key: ItemKey? = null
-    // 在 initLoader 成功后启动,定时保存任务
-    private var saveJob: Job? = null
-
+    // 新增：用于控制延迟保存的 Job
+    private var autoSaveJob: Job? = null
+    //当前阅读位置和以前阅读位置，这样就可以自动保存的时候跳过重复
     private var currentOffsetY: Int = 0
+    private var lastCurrentOffsetY: Int? = null
 
+    private var totalReadTime = 0L;
+    private var lastReadTime: Long = 0
 
 
     // 改为普通属性（或直接不存）
@@ -101,6 +107,8 @@ class ComicViewModel @Inject constructor(
         //把需要的信息都获取了,路径, 和key
         val path = itemInfo.path
         key = ItemKey(androidId = itemInfo.androidId, path = itemInfo.path, hash = itemInfo.hash)
+        totalReadTime = itemInfo.totalReadTime
+        lastReadTime = System.currentTimeMillis()
         //获取所有图片信息,名称等
         loadFile = ZipOrFolderLoad(context, path)
         val sortedPages = loadFile?.loadComic()?: return null
@@ -113,15 +121,13 @@ class ComicViewModel @Inject constructor(
             preloadPages(itemInfo.currentPage.toFloat())
         }
         // 👇 激活 saveJob
-        onViewportScrolled(itemInfo.currentPage.toFloat(), 2000)
-        startAutoSave()
+        scheduleAutoSave()
         return virtualCanvas
     }
 
     // 加载指定页（外部调用）
     private fun loadPage(index: Int) {
         if (comicPageCache.contains(index)) return
-
         viewModelScope.launch(Dispatchers.IO) {
             folderOrZipLoader?.loadPage(index)?.let { bitmap ->
                 comicPageCache.put(index, bitmap)
@@ -191,12 +197,14 @@ class ComicViewModel @Inject constructor(
     //监听滚动
     fun onViewportScrolled(offsetY: Float, currentCanvasHeight: Int) {
         currentOffsetY = offsetY.toInt()
+        scheduleAutoSave()
         viewModelScope.launch {
             _viewportEvents.emit(ViewportEvent.Scroll(offsetY, currentCanvasHeight))
         }
     }
-
+    //监听滑动
     fun onViewportSlide(index: Int){
+        scheduleAutoSave()
         viewModelScope.launch {
             _viewportEvents.emit(ViewportEvent.Slide(index))
         }
@@ -207,20 +215,31 @@ class ComicViewModel @Inject constructor(
     }
 
 
-    //自动保存的定时任务
-    private fun startAutoSave() {
-        key ?: return // 👈 如果 key 还没设置，直接退出
-        saveJob?.cancel()
-        saveJob = _viewportEvents
-            .map { Unit }
-            .sample(5000) // 每5秒
-            .onEach { offsetY ->
-                key?.let { key ->
-                    // 调用你的数据库更新方法
-                    itemInfoRepository.updateByCurrentPage(currentPage = currentOffsetY, key = key)
-                    itemInfoRepository.updateByLastReadTime(key = key, System.currentTimeMillis())
-                }
+
+    // 新增：触发自动保存（带防抖）
+    private fun scheduleAutoSave() {
+        // 取消之前的保存任务（防抖关键！）
+        autoSaveJob?.cancel()
+        // ✅ 关键：只有位置变化了才保存
+
+        autoSaveJob = viewModelScope.launch {
+            delay(3000) // 等待 3 秒，确认用户已停止操作
+            if (lastCurrentOffsetY == currentOffsetY) {
+                return@launch
             }
-            .launchIn(viewModelScope)
+            key?.let { key ->
+
+                totalReadTime += (System.currentTimeMillis() - lastReadTime)
+                lastReadTime = System.currentTimeMillis()
+                val schedule = ((currentOffsetY.toFloat() / virtualCanvas!!.totalHeight) * 100f).roundToInt()
+                itemInfoRepository.updateBySchedule(key = key, schedule = schedule)
+                // 保存当前 offset（注意：这里用 currentOffsetY）
+                itemInfoRepository.updateByCurrentPage(currentPage = currentOffsetY, key = key)
+                itemInfoRepository.updateByLastReadTime(key = key, System.currentTimeMillis())
+                itemInfoRepository.updateByTotalReadTime(key = key, totalReadTime)
+                lastCurrentOffsetY = currentOffsetY
+
+            }
+        }
     }
 }

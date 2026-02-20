@@ -2,6 +2,8 @@
 package com.example.read5.global
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
@@ -14,7 +16,10 @@ import kotlin.concurrent.write
 data class Config(
     var history: List<Long> = emptyList(),
     var recentStoreHouse: Long = 1L,
-    var scale: Float = 1f
+    var scale: Float = 1f,
+    var readMode: String = "horizon_comic_view",
+    var backgroundColorArgb: Long = 0xFF000000L, // Color.Black 的 ARGB
+    var panSmoothing: Float = 1f,
 )
 
 object GlobalSettings {
@@ -85,6 +90,22 @@ object GlobalSettings {
     fun getRecentStoreHouse(): Long = read { it.recentStoreHouse }
     fun getScale(): Float = read { it.scale }
 
+    fun getReadMode(): String = read { it.readMode }
+
+    fun getPanSmoothing(): Float = read { it.panSmoothing }
+
+    // 👇 新增：获取背景色（自动从 Long 转 Color）
+    fun getBackgroundColor(): Color = read {
+        try {
+            Color(it.backgroundColorArgb.toInt()) // Long → Int → Color
+        } catch (e: Exception) {
+            Color.Black // fallback
+        }
+    }
+
+    fun setSlidingSpeed(speed: Float) {
+        write { it.panSmoothing = speed } // 可选：限制滑动速度范围
+    }
     fun addToHistory(itemId: Long) {
         write { config ->
             // 去重 + 移到最前
@@ -104,6 +125,17 @@ object GlobalSettings {
 
     fun setScale(scale: Float) {
         write { it.scale = scale.coerceIn(0.5f, 5.0f) } // 可选：限制缩放范围
+    }
+
+    fun setReadMode(mode: String) {
+        write { it.readMode = mode }
+    }
+
+    // 👇 新增：设置背景色（Color → Long）
+    fun setBackgroundColor(color: Color) {
+        write {
+            it.backgroundColorArgb = color.toArgb().toLong()
+        }
     }
 
     // 强制立即保存（如退出应用时调用）
