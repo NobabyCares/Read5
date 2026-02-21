@@ -18,6 +18,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,7 +51,12 @@ fun BookShelfScreen(
     var isImport by remember { mutableStateOf(false) }
     val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
 
-    searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
+
+    // ✅ 使用 LaunchedEffect 控制初始化，只在第一次加载时执行
+    LaunchedEffect(Unit) {
+        searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
+    }
+
 
     val gridState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
