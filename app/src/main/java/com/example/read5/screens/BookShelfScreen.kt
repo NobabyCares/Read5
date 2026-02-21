@@ -1,26 +1,35 @@
 package com.example.read5.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.iteminfo.ItemInfoScreen
 import com.example.read5.screens.sortbar.SortBarScreen
@@ -30,84 +39,115 @@ import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 import com.example.read5.singledata.DocumentHolder
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 
-// BookShelfScreen.kt
-// ——————— 书架页面 ———————
 @Composable
 fun BookShelfScreen(
     navController: NavHostController,
     storeHouseModel: StoreHouseViewModel,
-    searchItemInfo: SearchItemInfo
+    searchItemInfo: SearchItemInfo,
 ) {
-
-    val TAG: String = "BookShelfScreen"
-
-    //StoreHouse 数据收集
     val storeHouses by storeHouseModel.storeHouses.collectAsStateWithLifecycle()
     val isShow by storeHouseModel.isShow
-
-    //是否显示导入compose
     var isImport by remember { mutableStateOf(false) }
-
-    //ItemInfo 数据收集
-    //这个是展示数据,可能是搜索数据,也可能是全部数据
     val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
+
     searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
 
+    val gridState = rememberLazyGridState()
+    val coroutineScope = rememberCoroutineScope()
+    val showScrollToTop = remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    androidx.compose.runtime.LaunchedEffect(gridState.firstVisibleItemIndex) {
+        showScrollToTop.value = gridState.firstVisibleItemIndex > 3
+    }
 
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 96.dp),
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            if(isShow){
-                items(storeHouses) { storeHouse ->
-                    StoreHouseCard(
-                        storeHouse = storeHouse,
-                        onClick = {
-                            if(storeHouse.id != 1L){
-                                GlobalSettings.setRecentStoreHouse(storeHouse.id)
-                                searchItemInfo.searchByCategory(storeHouse.id)
-                                storeHouseModel.isShow(false)
-                            }else{
-                                isImport =  true
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Adaptive(minSize = 96.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (isShow) {
+                    items(storeHouses) { storeHouse ->
+                        StoreHouseCard(
+                            storeHouse = storeHouse,
+                            onClick = {
+                                if (storeHouse.id != 1L) {
+                                    GlobalSettings.setRecentStoreHouse(storeHouse.id)
+                                    searchItemInfo.searchByCategory(storeHouse.id)
+                                    storeHouseModel.isShow(false)
+                                } else {
+                                    isImport = true
+                                }
                             }
-
+                        )
+                    }
+                } else {
+                    val readMode = GlobalSettings.getReadMode()
+                    items(itemInfos.itemCount) { index ->
+                        itemInfos[index]?.let {
+                            ItemInfoScreen(it, onToView = {
+                                DocumentHolder.setCurrentItem(it)
+                                GlobalSettings.addToHistory(it)
+                                navController.navigate(readMode) {
+                                    launchSingleTop = true
+                                }
+                            })
                         }
-                    )
-                }
-
-            }else{
-                val readMode = GlobalSettings.getReadMode()
-                items(itemInfos.itemCount) { index ->
-                    itemInfos[index]?.let { ItemInfoScreen(it, onToView = {
-                        // ✅ 正确：触发导航，传递必要的参数
-                        // ✅ 关键：对路径进行 URL 编码
-                        // ✅ 关键：使用 Uri.encode()，不是 URLEncoder！
-                        DocumentHolder.setCurrentItem(it)
-                        GlobalSettings.addToHistory(it)
-                        // ✅ 方式1：使用 navigate，确保正确进入栈
-
-                       navController.navigate(readMode) {
-                            // 重要：不要 popUpTo，这样会保留返回栈
-                            launchSingleTop = true
-                        }
-                    }) }
+                    }
                 }
             }
 
+            SortBarScreen(
+                GlobalSettings.getRecentStoreHouse(),
+                searchItemInfo = searchItemInfo
+            )
+
+            if (isImport) {
+                StoreHouseInputDialog { isImport = false }
+            }
         }
 
-        SortBarScreen(
-            GlobalSettings.getRecentStoreHouse(),
-            searchItemInfo = searchItemInfo
+        // 返回顶部按钮 - 调整位置到SortBar上方
+        if (showScrollToTop.value) {
+            ScrollToTopButton(
+                onClick = {
+                    coroutineScope.launch {
+                        gridState.animateScrollToItem(0)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)  // 仍然右下角对齐
+                    .padding(bottom = 80.dp, end = 16.dp)  // 增加底部padding，让按钮在SortBar上方
+            )
+        }
+    }
+}
+
+/**
+ * 返回顶部悬浮按钮
+ */
+@Composable
+fun ScrollToTopButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        modifier = modifier.size(48.dp),
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowUp,
+            contentDescription = "返回顶部"
         )
-
-        if(isImport){
-            StoreHouseInputDialog { isImport = false }
-        }
     }
 }

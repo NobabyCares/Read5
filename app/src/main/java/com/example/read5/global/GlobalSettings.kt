@@ -95,7 +95,7 @@ object GlobalSettings {
      * 反转后就是最新在前
      */
     fun getHistory(): List<ItemInfo> = read {
-        config.historyItems.reversed()
+        config.historyItems
     }
     fun getRecentStoreHouse(): Long = read { it.recentStoreHouse }
     fun getScale(): Float = read { it.scale }
@@ -123,29 +123,16 @@ object GlobalSettings {
      */
     fun addToHistory(item: ItemInfo) {
         write { config ->
-            // 将 List 转换为 LinkedHashSet 进行操作
-            val linkedSet = LinkedHashSet(config.historyItems)
+            // 用 id 作为 key 的 Map
+            val map = config.historyItems.associateBy { it.id }.toMutableMap()
 
-            // 更新最后阅读时间
-            val updatedItem = item.copy(lastReadTime = System.currentTimeMillis())
+            // 放入新记录（自动覆盖相同 id 的）
+            map[item.id] = item.copy(lastReadTime = System.currentTimeMillis())
 
-            // 先移除再添加（相当于移动到最新位置）
-            linkedSet.remove(updatedItem)
-            linkedSet.add(updatedItem)
-
-            // 限制大小，移除最旧的
-            if (linkedSet.size > MAX_HISTORY_SIZE) {
-                val iterator = linkedSet.iterator()
-                repeat(linkedSet.size - MAX_HISTORY_SIZE) {
-                    if (iterator.hasNext()) {
-                        iterator.next()  // 第一个是最旧的
-                        iterator.remove()
-                    }
-                }
-            }
-
-            // 保存回 config
-            config.historyItems = linkedSet.toList()
+            // 按时间排序并限制数量
+            config.historyItems = map.values
+                .sortedByDescending { it.lastReadTime }
+                .take(MAX_HISTORY_SIZE)
         }
     }
 

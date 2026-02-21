@@ -17,14 +17,15 @@ sealed class SortOption(
     object NameAsc : SortOption("名称 (A→Z)", SortField.NAME, true)
     object NameDesc : SortOption("名称 (Z→A)", SortField.NAME, false)
 
-    object TimeAsc : SortOption("阅读时间 (旧→新)", SortField.LAST_READ_TIME, true)
-    object TimeDesc : SortOption("阅读时间 (新→旧)", SortField.LAST_READ_TIME, false)
+    object TimeAsc : SortOption("上次阅读时间 (旧→新)", SortField.LAST_READ_TIME, true)
+    object TimeDesc : SortOption("上次阅读时间 (新→旧)", SortField.LAST_READ_TIME, false)
 
-    object ProgressDesc : SortOption("阅读进度 (高→低)", SortField.READ_PROGRESS, false)
-    object ProgressAsc : SortOption("阅读进度 (低→高)", SortField.READ_PROGRESS, true)
+    //这里进度存储(schedule)的是负数，所以asc和desc需要交换一下位置
+    object ProgressDesc : SortOption("进度 (高→低)", SortField.READ_PROGRESS, true)
+    object ProgressAsc : SortOption("进度 (低→高)", SortField.READ_PROGRESS, false)
 
-    object TotalReadTimeAsc : SortOption("阅读时间 (低→高)", SortField.TOTAL_READ_TIME, true)
-    object TotalReadTimeDesc : SortOption("阅读时间 (高→低)", SortField.TOTAL_READ_TIME, false)
+    object TotalReadTimeAsc : SortOption("时间 (低→高)", SortField.TOTAL_READ_TIME, true)
+    object TotalReadTimeDesc : SortOption("时间 (高→低)", SortField.TOTAL_READ_TIME, false)
 
     companion object {
         val default = NameAsc

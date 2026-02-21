@@ -19,10 +19,10 @@ import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(navController: NavController,
+fun TopBarContent(navController: NavController,
            searchItemInfo: SearchItemInfo,
            storeHouseViewModel: StoreHouseViewModel
-           ) {
+) {
     // 用于控制菜单展开状态
     var expanded by remember { mutableStateOf(false) }
     //用于控制搜索框的展开状态
@@ -63,7 +63,7 @@ fun TopBar(navController: NavController,
                     )
             }
         }else{
-             // 左侧标签
+            // 左侧标签
             // 当前选中的 tab 索引（可选，用于高亮）
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 tabs.forEachIndexed { index, tabName ->

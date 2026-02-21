@@ -7,7 +7,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.read5.screens.route.MainNavGraph
-import com.example.read5.screens.topbar.TopBar
+import com.example.read5.screens.topbar.TopBarContent
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
@@ -35,7 +35,7 @@ fun MainBookApp () {
         topBar = {
             // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
             if (currentRoute == "bookshelf") {
-                TopBar(navController, searchItemInViewModel, storeHouseViewModel)
+                TopBarContent(navController, searchItemInViewModel, storeHouseViewModel = storeHouseViewModel)
             }
 
         },

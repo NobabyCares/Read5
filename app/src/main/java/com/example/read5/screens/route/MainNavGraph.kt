@@ -38,7 +38,9 @@ fun MainNavGraph(
         modifier = Modifier.padding(paddingValues),
     ) {
         composable("bookshelf") {
-            BookShelfScreen(navController,searchItemInfo = searchItemInfo, storeHouseModel = storeHouseViewModel)
+            BookShelfScreen(navController,searchItemInfo = searchItemInfo,
+                storeHouseModel = storeHouseViewModel,
+                 )
         }
         composable("reading") {
             CenteredText("跳转：阅读")

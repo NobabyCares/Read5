@@ -38,7 +38,7 @@ fun ItemMoreInfoDialog(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-
+            Text(text = "${item.path}")
             Button(
                 onClick = {
                     updatedItem.updateByIsShow(key, false) // ✅ 放在 onClick 里！
