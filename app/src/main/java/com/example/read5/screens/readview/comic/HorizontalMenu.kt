@@ -29,7 +29,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,27 +48,11 @@ import com.example.read5.global.GlobalSettings
 @Composable
 fun HorizontalMenu(
     navController: NavHostController,
-    backgroundColor: Color,
     readingProgress: Float,
-    panSmoothing: Float,
     onProgressChanged: (Float) -> Unit = {},
-    onPanSmoothing: (Float) -> Unit = {},
-    onBackgroundColorChanged: (Color) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val TAG = "HorizontalMenu"
-
-    // 预设背景色选项
-    val backgroundOptions = listOf(
-        Color.Black to "黑",
-        Color(0xFF121212) to "深灰",
-        Color(0xFFF5F5F5) to "浅灰",
-        Color.White to "白"
-    )
-
-    var isBgMenuExpanded by remember { mutableStateOf(false) }
-    var isSmoothMenuExpanded by remember { mutableStateOf(false) }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -77,42 +63,7 @@ fun HorizontalMenu(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // 顶部进度条
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "进度",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    modifier = Modifier.width(40.dp)
-                )
-
-                Slider(
-                    value = readingProgress.coerceIn(0f, 1f),
-                    onValueChange = { newValue ->
-                        Log.d(TAG, "Slider_change: $newValue")
-                        onProgressChanged(newValue)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Color(0xFF4FC3F7),
-                        inactiveTrackColor = Color.Gray.copy(alpha = 0.4f)
-                    ),
-                    thumb = {
-                        Box(
-                            modifier = Modifier
-                                .size(16.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                                .border(1.5.dp, Color.Black.copy(alpha = 0.3f), CircleShape)
-                        )
-                    }
-                )
-            }
+            SimpleProgressBar(progress = readingProgress, onProgressChange = onProgressChanged)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -122,89 +73,6 @@ fun HorizontalMenu(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. 背景选择按钮
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .clickable { isBgMenuExpanded = true }
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.1f))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Background",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = "背景",
-                            color = Color.White,
-                            fontSize = 12.sp
-                        )
-                        // 当前背景色预览
-                        Box(
-                            modifier = Modifier
-                                .size(16.dp)
-                                .clip(CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                                .background(backgroundColor)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = isBgMenuExpanded,
-                        onDismissRequest = { isBgMenuExpanded = false },
-                        modifier = Modifier.background(Color(0xFF2A2A2A))
-                    ) {
-                        backgroundOptions.forEach { (color, label) ->
-                            DropdownMenuItem(
-                                onClick = {
-                                    onBackgroundColorChanged(color)
-                                    GlobalSettings.setBackgroundColor(color)
-                                    isBgMenuExpanded = false
-                                    Log.d(TAG, "Background color changed to: $color")
-                                },
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .clip(CircleShape)
-                                                .background(color)
-                                                .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                                        )
-                                        Text(
-                                            text = label,
-                                            color = Color.White,
-                                            fontSize = 14.sp
-                                        )
-                                        if (color == backgroundColor) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = Color(0xFF4FC3F7),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-
 
                 // 3. 竖屏阅读按钮
                 Button(

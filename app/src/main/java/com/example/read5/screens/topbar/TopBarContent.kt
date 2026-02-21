@@ -17,11 +17,16 @@ import com.example.read5.screens.storehouse.StoreHouseInputDialog
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/*
+* 这里有个小问题,就是在阅读返回后跳转页面的UI更新不对,
+* 比如从历史记录返回,那高亮的就是历史记录,但是是书卓,
+* 先不解决,无上大雅
+* */
 @Composable
 fun TopBarContent(navController: NavController,
-           searchItemInfo: SearchItemInfo,
-           storeHouseViewModel: StoreHouseViewModel
+        searchItemInfo: SearchItemInfo,
+        displayMode: String,
+        onModeChange: (String) -> Unit // 新增
 ) {
     // 用于控制菜单展开状态
     var expanded by remember { mutableStateOf(false) }
@@ -59,8 +64,7 @@ fun TopBarContent(navController: NavController,
                     onDismiss = {
                         isSearchExpanded = false
                     },
-
-                    )
+                )
             }
         }else{
             // 左侧标签
@@ -75,16 +79,10 @@ fun TopBarContent(navController: NavController,
                                 selectedTab = index
                                 when (tabName){
                                     "历史记录" -> {
-                                        searchItemInfo.history()
-                                        storeHouseViewModel.isShow(false)
+                                        onModeChange("history")
                                     }
-                                    "书桌" -> {
-                                        searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
-                                        storeHouseViewModel.isShow(false)
-                                    }
-                                    "书架" ->{
-                                        storeHouseViewModel.isShow(true)
-                                    }
+                                    "书桌" -> onModeChange("bookdesk")
+                                    "书架" -> onModeChange("bookshelf")
                                 }
 
                             }

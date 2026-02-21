@@ -3,12 +3,22 @@ package com.example.read5.screens.readview.comic
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.read5.bean.ItemInfo
@@ -35,6 +46,7 @@ import com.example.read5.bean.VirtualCanvas
 import com.example.read5.global.GlobalSettings
 import com.example.read5.singledata.DocumentHolder
 import com.example.read5.utils.comic.GestureUitils
+import com.example.read5.utils.comic.PixelTranslationIndex
 import com.example.read5.viewmodel.comic.ComicViewModel
 import kotlinx.coroutines.delay
 
@@ -98,6 +110,20 @@ private fun VirtualComicCanvasContent(
         GlobalSettings.setSlidingSpeed(panSmoothing)
     }
 
+    // ⚡️ 关键：使用 DisposableEffect 处理退出时的保存
+    DisposableEffect(Unit) {
+        // 这个块在组件首次加载时执行
+        // 返回一个 onDispose 块，在组件销毁时执行
+        onDispose {
+            // 更新 ItemInfo
+            val finalItemInfo = itemInfo.copy(
+                currentPage = offsetY.toInt()
+            )
+            // 添加到历史记录
+            GlobalSettings.addToHistory(finalItemInfo)
+        }
+    }
+
     // 使用 Box 作为最外层容器
     Box(
         modifier = Modifier
@@ -111,6 +137,7 @@ private fun VirtualComicCanvasContent(
                 .pointerInput(Unit) {
                     while (true) {
                         awaitEachGesture {
+                            Log.d(TAG, "awaitEachGesture")
                             var startTime: Long? = null
                             var totalPan = Offset.Zero
                             var isMultiFinger = false
@@ -128,7 +155,6 @@ private fun VirtualComicCanvasContent(
                                 // 处理移动/缩放
                                 when (event.changes.size) {
                                     1 -> {
-                                        Log.d(TAG, "Single finger")
                                         val pan = event.changes[0].positionChange()
                                         totalPan += pan
 
@@ -139,11 +165,18 @@ private fun VirtualComicCanvasContent(
                                         offsetY += smoothedY / scale
 
                                         // 防止画布超出边界
-                                        val maxOffset = (canvas.totalHeight * scale - size.height).coerceAtLeast(0f)
+                                        val maxOffset =
+                                            (canvas.totalHeight * scale - size.height).coerceAtLeast(
+                                                0f
+                                            )
                                         offsetY = offsetY.coerceIn(-maxOffset, 0f)
                                         // 👇 关键：通知 ViewModel
-                                        comicViewModel.onViewportScrolled(offsetY, currentCanvasHeight)
+                                        comicViewModel.onViewportScrolled(
+                                            offsetY,
+                                            currentCanvasHeight
+                                        )
                                     }
+
                                     2 -> {
                                         isMultiFinger = true
                                         val rawZoom = GestureUitils.calculateZoom(event.changes)
@@ -197,47 +230,84 @@ private fun VirtualComicCanvasContent(
                     }
             }
         }
+        // 页码指示器（始终显示）
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = if (isMenuVisible) 190.dp else 16.dp) // 菜单显示时上移到菜单上方
+                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = "${PixelTranslationIndex.searchByOffsetYPageIndex(offsetY.toInt(),canvas)} / ${canvas.pageLayouts.size}",
+                color = Color.White,
+                fontSize = 14.sp
+            )
+        }
 
-        // ===== 区域2：菜单区域（单独一层，不干扰手势）=====
+        //菜单
         if (isMenuVisible) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    // 关键：菜单区域消费所有触摸事件，防止穿透到画布
-                    .pointerInput(Unit) {
-                        awaitEachGesture {
-                            do {
-                                val event = awaitPointerEvent()
-                                // 消费所有事件，不让它们传递到下层
-                                event.changes.forEach { it.consume() }
-                            } while (event.changes.any { it.pressed })
-                        }
-                    }
+                    .align(Alignment.BottomCenter)  // 整个 Column 对齐到底部
+                    .background(Color.Black.copy(alpha = 0.85f))  // 添加背景色让菜单更明显
             ) {
+                // ✅ 底部菜单：对齐屏幕底部
                 VerticalMenu(
                     navController = navController,
-                    backgroundColor = backgroundColor,
                     readingProgress = (-offsetY) / canvas.totalHeight.toFloat(),
-                    panSmoothing = panSmoothing,
                     onProgressChanged = { newProgress ->
                         val targetOffsetY = -(canvas.totalHeight * newProgress.coerceIn(0f, 1f))
                         offsetY = targetOffsetY
-                        Log.d("ButtomReadingMenu", "🎯 Target offsetY: $offsetY, currentCanvasHeight: $currentCanvasHeight")
                         comicViewModel.onViewportScrolled(offsetY, currentCanvasHeight)
                     },
-                    onPanSmoothing = {
-                        panSmoothing = it
-                        Log.d("VerticalMenu", "Pan smoothing changed to: $it")
-                    },
-                    onBackgroundColorChanged = {
-                        backgroundColor = it
-                        GlobalSettings.setBackgroundColor(it)
-                        Log.d("VerticalMenu", "Background color changed to: $it")
-                    },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    modifier = Modifier
+                        .fillMaxWidth()
                 )
+
+                // 第二行：PanSmoothScreen 和 BackGroundColorScreen 平分空间
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .background(Color.Black.copy(alpha = 0.85f)),
+                    horizontalArrangement = Arrangement.SpaceEvenly  // 平分空间
+                ) {
+                    // PanSmoothScreen 占一半
+                    Box(
+                        modifier = Modifier.weight(1f)  // 权重为1，平分空间
+                    ) {
+                        PanSmoothScreen(
+                            panSmoothing = panSmoothing,
+                            onPanSmoothing = {
+                                panSmoothing = it
+                                Log.d("VerticalMenu", "Pan smoothing changed to: $it")
+                            }
+                        )
+                    }
+
+                    // 间距
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // BackGroundColorScreen 占一半
+                    Box(
+                        modifier = Modifier.weight(1f)  // 权重为1，平分空间
+                    ) {
+                        BackGroundColorScreen(
+                            backgroundColor = backgroundColor,
+                            onBackgroundColorChanged = {
+                                backgroundColor = it
+                                GlobalSettings.setBackgroundColor(it)
+                                Log.d("VerticalMenu", "Background color changed to: $it")
+                            }
+                        )
+                    }
+
+                }
             }
         }
+
     }
 }
+

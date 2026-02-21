@@ -3,6 +3,10 @@ package com.example.read5.screens.route
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontVariation
 import androidx.navigation.NavHostController
@@ -27,20 +31,21 @@ fun MainNavGraph(
     // 用于接收 Scaffold 的 innerPadding
     paddingValues: PaddingValues,
     searchItemInfo: SearchItemInfo,
-    storeHouseViewModel: StoreHouseViewModel
+    storeHouseViewModel: StoreHouseViewModel,
+    displayMode: String = "bookdesk"
 ) {
-
-
-
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = Modifier.padding(paddingValues),
     ) {
         composable("bookshelf") {
-            BookShelfScreen(navController,searchItemInfo = searchItemInfo,
+            BookShelfScreen(
+                navController,
+                searchItemInfo = searchItemInfo,
                 storeHouseModel = storeHouseViewModel,
-                 )
+                displayMode = displayMode,
+            )
         }
         composable("reading") {
             CenteredText("跳转：阅读")

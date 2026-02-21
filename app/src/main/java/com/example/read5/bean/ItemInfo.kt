@@ -61,26 +61,6 @@ data class ItemInfo(
     var fileSize: Long = 0,
     var fileType : String = ""
 ){
-    constructor() : this(
-        id = 0,
-        name = "",
-        baseCode = "",
-        author = "",
-        path = "",
-        totalPage = 0,
-        currentPage = 0,
-        cover = false,
-        createTime = 0L,
-        lastReadTime = 0L,
-        totalReadTime = 0L,
-        schedule = 0,
-        isShow = true,
-        hash = "",
-        category = 0L,
-        isCollect = false,
-        fileSize = 0L,
-        fileType = ""
-    )
     // ✅ 添加一个可读时间字符串（基于 lastReadTime）
     val lastReadTimeFormatted: String
         get() = if (lastReadTime > 0) {

@@ -36,6 +36,7 @@ import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.VirtualCanvas
 import com.example.read5.global.GlobalSettings
 import com.example.read5.singledata.DocumentHolder
+import com.example.read5.utils.comic.PixelTranslationIndex.searchByOffsetYPageIndex
 import com.example.read5.viewmodel.comic.ComicViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -78,12 +79,15 @@ private fun HorizontalComicCanvasContent(
     val pageCache by comicViewModel.pageCache.collectAsState()
 
     var isLoading by remember { mutableStateOf(true) }
-    var currentIndex by remember { mutableIntStateOf(0) }
+    //数据库存储的数据
+    var currentPage by remember { mutableIntStateOf(0) }
     var isMenuVisible by remember { mutableStateOf(false) }
     var panSmoothing by remember { mutableFloatStateOf(1f) }
 
     // ✅ 缩放状态：和原文件一致
     var scale by remember { mutableFloatStateOf(GlobalSettings.getScale()) }
+
+
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -118,7 +122,7 @@ private fun HorizontalComicCanvasContent(
     LaunchedEffect(pagerState.currentPage) {
         val current = pagerState.currentPage
         //这里一定要存储负数,因为在VirtualComicCanvas存储的是偏移量, 而偏移量始终为负数, 所以这里要取负数, 同意数据
-        currentIndex = -1 * canvas.pageLayouts[current].top
+        currentPage = -1 * canvas.pageLayouts[current].top
         val range = (current - 2)..(current + 2) // 预加载前后 2 页
         range.forEach { index ->
             if (index in 0 until totalPages) {
@@ -126,13 +130,26 @@ private fun HorizontalComicCanvasContent(
                 comicViewModel.onViewportSlide(index)
             }
         }
-        comicViewModel.updateCurrentPage(currentIndex)
-        Log.d(TAG, "Current page changed to: $current, currentIndex: $currentIndex")
+        comicViewModel.updateCurrentPage(currentPage)
     }
 
     LaunchedEffect(scale) {
         delay(3000)
         GlobalSettings.setScale(scale)
+    }
+
+    // ⚡️ 关键：使用 DisposableEffect 处理退出时的保存
+    DisposableEffect(Unit) {
+        // 这个块在组件首次加载时执行
+        // 返回一个 onDispose 块，在组件销毁时执行
+        onDispose {
+            // 更新 ItemInfo
+            val finalItemInfo = itemInfo.copy(
+                currentPage = currentPage
+            )
+            // 添加到历史记录
+            GlobalSettings.addToHistory(finalItemInfo)
+        }
     }
 
     // 使用 Box 作为最外层容器，分离手势区域
@@ -157,7 +174,8 @@ private fun HorizontalComicCanvasContent(
                         },
                         onTap = {
                             // 单点击切换菜单可见性
-                            val duration = if (startTime != null) System.currentTimeMillis() - startTime else 0L
+                            val duration =
+                                if (startTime != null) System.currentTimeMillis() - startTime else 0L
                             if (!isMultiFinger && duration <= 250) {
                                 isMenuVisible = !isMenuVisible
                                 Log.d(TAG, "Tap detected, menu visible: $isMenuVisible")
@@ -182,44 +200,60 @@ private fun HorizontalComicCanvasContent(
 
         // ===== 区域2：菜单区域（单独一层，消费事件）=====
         if (isMenuVisible) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    // 关键：菜单区域消费所有触摸事件，防止穿透到画布
-                    .pointerInput(Unit) {
-                        awaitEachGesture {
-                            do {
-                                val event = awaitPointerEvent()
-                                // 消费所有事件，不让它们传递到下层
-                                event.changes.forEach { it.consume() }
-                            } while (event.changes.any { it.pressed })
-                        }
-                    }
+            Column(
+                modifier = Modifier.fillMaxWidth()
+                    .align(Alignment.BottomCenter)  // 整个 Column 对齐到底部
+                    .background(Color.Black.copy(alpha = 0.85f))  // 添加背景色让菜单更明显
             ) {
                 HorizontalMenu(
                     navController = navController,
-                    backgroundColor = backgroundColor,
-                    readingProgress = (pagerState.currentPage / canvas.pageLayouts.size.toFloat()),
-                    panSmoothing = panSmoothing,
-                    onProgressChanged = { newProgress ->
-                        val targetPage = (newProgress * (totalPages - 1)).coerceIn(0f, (totalPages - 1).toFloat()).toInt()
+                    readingProgress = (pagerState.currentPage.toFloat() / totalPages),
+                    onProgressChanged = {
+                        val targetPage = (it * totalPages).toInt()
                         scope.launch {
                             pagerState.animateScrollToPage(targetPage)
-                            Log.d(TAG, "Progress changed to: $newProgress, target page: $targetPage")
                         }
-                    },
-                    onPanSmoothing = {
-                        panSmoothing = it
-                        Log.d(TAG, "Pan smoothing changed to: $it")
-                    },
-                    onBackgroundColorChanged = {
-                        backgroundColor = it
-                        GlobalSettings.setBackgroundColor(it)
-                        Log.d(TAG, "Background color changed to: $it")
-                    },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    }
                 )
+                // 第二行：PanSmoothScreen 和 BackGroundColorScreen 平分空间
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .background(Color.Black.copy(alpha = 0.85f)),
+                    horizontalArrangement = Arrangement.SpaceEvenly  // 平分空间
+                ) {
+                    // PanSmoothScreen 占一半
+                    Box(
+                        modifier = Modifier.weight(1f)  // 权重为1，平分空间
+                    ) {
+                        PanSmoothScreen(
+                            panSmoothing = panSmoothing,
+                            onPanSmoothing = {
+                                panSmoothing = it
+                                Log.d("VerticalMenu", "Pan smoothing changed to: $it")
+                            }
+                        )
+                    }
+
+                    // 间距
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // BackGroundColorScreen 占一半
+                    Box(
+                        modifier = Modifier.weight(1f)  // 权重为1，平分空间
+                    ) {
+                        BackGroundColorScreen(
+                            backgroundColor = backgroundColor,
+                            onBackgroundColorChanged = {
+                                backgroundColor = it
+                                GlobalSettings.setBackgroundColor(it)
+                                Log.d("VerticalMenu", "Background color changed to: $it")
+                            }
+                        )
+                    }
+
+                }
             }
         }
 
@@ -227,7 +261,7 @@ private fun HorizontalComicCanvasContent(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = if (isMenuVisible) 130.dp else 8.dp) // 菜单显示时上移
+                .padding(bottom = if (isMenuVisible) 190.dp else 8.dp) // 菜单显示时上移
                 .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
@@ -285,16 +319,5 @@ private fun PageItem(
                 )
             }
         }
-    }
-}
-
-fun searchByOffsetYPageIndex(offsetY: Int, canvas: VirtualCanvas): Int {
-    return run {
-        //这数据库存储的是offsetY的偏差，他本身是负数，但是canvas是按照正数排序的，所以转换一下
-        val visibleTop = -1 * offsetY
-        canvas.pageLayouts
-            .indexOfFirst { it.top >= visibleTop }
-            .takeIf { it >= 0 }
-            ?: (canvas.pageLayouts.size - 1)
     }
 }

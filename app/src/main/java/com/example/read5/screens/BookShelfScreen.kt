@@ -1,5 +1,6 @@
 package com.example.read5.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +46,10 @@ fun BookShelfScreen(
     navController: NavHostController,
     storeHouseModel: StoreHouseViewModel,
     searchItemInfo: SearchItemInfo,
+    displayMode: String,
+    onModeChange: (String) -> Unit = {} // 新增
 ) {
+    val TAG = "BookShelfScreen"
     val storeHouses by storeHouseModel.storeHouses.collectAsStateWithLifecycle()
     val isShow by storeHouseModel.isShow
     var isImport by remember { mutableStateOf(false) }
@@ -53,8 +57,24 @@ fun BookShelfScreen(
 
 
     // ✅ 使用 LaunchedEffect 控制初始化，只在第一次加载时执行
-    LaunchedEffect(Unit) {
-        searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
+    // 使用 displayMode 决定加载什么数据
+    LaunchedEffect(displayMode) {
+        when (displayMode) {
+            "history" -> {
+                searchItemInfo.history()
+                storeHouseModel.isShow(false)
+            }
+            "bookdesk" -> {
+                searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
+                storeHouseModel.isShow(false)
+            }
+            "bookshelf" -> {
+                storeHouseModel.isShow(true)
+            }
+            else -> {
+               Log.e(TAG, "Invalid displayMode: $displayMode")
+            }
+        }
     }
 
 
@@ -62,9 +82,7 @@ fun BookShelfScreen(
     val coroutineScope = rememberCoroutineScope()
     val showScrollToTop = remember { mutableStateOf(false) }
 
-    androidx.compose.runtime.LaunchedEffect(gridState.firstVisibleItemIndex) {
-        showScrollToTop.value = gridState.firstVisibleItemIndex > 3
-    }
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -101,7 +119,6 @@ fun BookShelfScreen(
                         itemInfos[index]?.let {
                             ItemInfoScreen(it, onToView = {
                                 DocumentHolder.setCurrentItem(it)
-                                GlobalSettings.addToHistory(it)
                                 navController.navigate(readMode) {
                                     launchSingleTop = true
                                 }

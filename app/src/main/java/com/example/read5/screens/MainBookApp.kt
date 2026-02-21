@@ -3,6 +3,9 @@ package com.example.read5.screens
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -31,11 +34,18 @@ fun MainBookApp () {
     //显示底部导航栏
     val showBottomBar = currentRoute in listOf("vertical_comic_view", "horizon_comic_view")
 
+    var displayMode by rememberSaveable { mutableStateOf("bookdesk") }
     Scaffold(
         topBar = {
             // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
             if (currentRoute == "bookshelf") {
-                TopBarContent(navController, searchItemInViewModel, storeHouseViewModel = storeHouseViewModel)
+                TopBarContent(
+                    navController, searchItemInViewModel,
+                    displayMode,
+                    onModeChange = {
+                        displayMode = it
+                    }
+                )
             }
 
         },
@@ -46,7 +56,12 @@ fun MainBookApp () {
             }
         }
     ) { padding ->
-        MainNavGraph(navController, "bookshelf", padding, searchItemInViewModel, storeHouseViewModel)
+        MainNavGraph(navController,
+            "bookshelf",
+            padding,
+            searchItemInViewModel,
+            storeHouseViewModel,
+            displayMode)
 }
 }
 
