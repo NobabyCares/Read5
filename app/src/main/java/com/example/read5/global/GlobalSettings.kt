@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.example.read5.bean.ItemInfo
+import com.example.read5.screens.sortbar.SortOption
 import kotlinx.coroutines.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
@@ -21,6 +22,10 @@ data class Config(
     var readMode: String = "horizon_comic_view",
     var backgroundColorArgb: Long = 0xFF000000L, // Color.Black 的 ARGB
     var panSmoothing: Float = 1f,
+    var sortType: Int = 1,
+    var ascOrdesc: Boolean = true,
+    var itemCount: Long = 0
+
 )
 
 object GlobalSettings {
@@ -88,7 +93,24 @@ object GlobalSettings {
     }
 
     // ———————— 公共 API ————————
-
+    fun getitemCount(): Long = read { it.itemCount }
+    fun setitemCount(itemCount: Long){
+        write {
+            it.itemCount = itemCount
+        }
+    }
+    fun getSortType(): Int = read { it.sortType }
+    fun setSortType(sortType: Int) {
+        write {
+            it.sortType = sortType
+        }
+    }
+    fun getAscOrdesc(): Boolean = read { it.ascOrdesc }
+    fun setAscOrdesc(ascOrdesc: Boolean) {
+        write {
+            it.ascOrdesc = ascOrdesc
+        }
+    }
     /**
      * 获取历史记录（最新优先）
      * LinkedHashSet 保持插入顺序，所以最后插入的在最后

@@ -80,6 +80,34 @@ interface ItemInfoDao {
     """)
     fun sortByTotalReadTimeDESC(category: Long): PagingSource<Int, ItemInfo>
 
+
+    @Query("""
+        SELECT * FROM item_info_table 
+        WHERE isShow = 1 AND category = :category
+        ORDER BY fileSize ASC
+    """)
+    fun sortByFileSizeASC(category: Long): PagingSource<Int, ItemInfo>
+    @Query("""
+        SELECT * FROM item_info_table 
+        WHERE isShow = 1 AND category = :category
+        ORDER BY fileSize DESC
+    """)
+    fun sortByFileSizeDESC(category: Long): PagingSource<Int, ItemInfo>
+
+    @Query("""
+        SELECT * FROM item_info_table 
+        WHERE isShow = 1 AND category = :category
+        ORDER BY createTime ASC
+    """)
+    fun sortByCreateTimeASC(category: Long): PagingSource<Int, ItemInfo>
+    @Query("""
+        SELECT * FROM item_info_table 
+        WHERE isShow = 1 AND category = :category
+        ORDER BY createTime DESC
+    """)
+    fun sortByCreateTimeDESC(category: Long): PagingSource<Int, ItemInfo>
+
+
     //根据id进行查询
     // ✅ 核心：使用 IN (:ids) 语法
     @Query("SELECT * FROM item_info_table WHERE id IN (:query) AND isShow = 1")

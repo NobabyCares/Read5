@@ -1,5 +1,7 @@
 package com.example.read5.screens.iteminfo
 
+import android.annotation.SuppressLint
+import android.text.format.Formatter.formatFileSize
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,6 +48,9 @@ import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
 import com.example.read5.viewmodel.CoverExtractorViewModel
 import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 //显示数据项和封面生成
 @Composable
@@ -176,11 +181,29 @@ fun ItemInfoScreen(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = formatMillisecondsToHMS(item.totalReadTime),
+                text = "总时长 " + formatMillisecondsToHMS(item.totalReadTime),
                 modifier = Modifier.padding(top = 4.dp),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1, // 👈 建议改为 1 行（"1h 23m" 不需要两行）
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = formatFileSize(item.fileSize),
+                modifier = Modifier.padding(top = 4.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = timestampToDateTime(item.createTime),
+                modifier = Modifier.padding(top = 4.dp),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             if (item.author.isNotEmpty()) {
@@ -221,8 +244,25 @@ fun ItemInfoScreen(
     }
 }
 
+//转化文件大小
+/**
+ * 将字节大小转换为可读的MB/GB格式
+ * @param bytes 字节数
+ * @return 格式化后的字符串，如 "2.5 MB", "1.2 GB"
+ */
+fun formatFileSize(bytes: Long): String {
+    if (bytes <= 0) return "0 MB"
 
+    val mb = bytes.toDouble() / (1024 * 1024)  // 转换为MB
+    val gb = mb / 1024  // 转换为GB
 
+    return when {
+        gb >= 1 -> String.format("%.1f GB", gb)
+        mb >= 1 -> String.format("%.1f MB", mb)
+        else -> String.format("%.1f KB", bytes.toDouble() / 1024)
+    }
+}
+//颜色标题
 fun getColorFromTitle(title: String): Color {
     val hash = title.hashCode()
     val r = (hash and 0xFF).toFloat() / 255f
@@ -230,6 +270,7 @@ fun getColorFromTitle(title: String): Color {
     val b = ((hash ushr 16) and 0xFF).toFloat() / 255f
     return Color(r, g, b)
 }
+//转换时间
 fun formatMillisecondsToHMS(milliseconds: Long): String {
     if (milliseconds <= 0) return "0秒"
 
@@ -250,4 +291,12 @@ fun formatMillisecondsToHMS(milliseconds: Long): String {
             append("${seconds}秒")
         }
     }
+}
+
+@SuppressLint("NewApi")
+fun timestampToDateTime(timestampMs: Long, zoneId: ZoneId = ZoneId.of("Asia/Shanghai")): String {
+    val instant = Instant.ofEpochMilli(timestampMs)
+    val zonedDateTime = instant.atZone(zoneId)
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    return zonedDateTime.format(formatter)
 }

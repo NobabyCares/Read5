@@ -129,6 +129,8 @@ class ItemInfoRepositoryImpl @Inject constructor(
                     SortField.LAST_READ_TIME -> if(ascending) itemInfoDao.sortByLastReadTimeASC(category) else itemInfoDao.sortByLastReadTimeDESC(category)
                     SortField.READ_PROGRESS -> if(ascending) itemInfoDao.sortByScheduleASC(category) else itemInfoDao.sortByScheduleDESC(category)
                     SortField.TOTAL_READ_TIME -> if(ascending) itemInfoDao.sortByTotalReadTimeASC(category) else itemInfoDao.sortByTotalReadTimeDESC(category)
+                    SortField.FILE_SIZE -> if (ascending) itemInfoDao.sortByFileSizeASC(category) else itemInfoDao.sortByFileSizeDESC(category)
+                    SortField.CREATE_TIME -> if (ascending) itemInfoDao.sortByCreateTimeASC(category) else itemInfoDao.sortByCreateTimeDESC(category)
                 }
             }
         ).flow

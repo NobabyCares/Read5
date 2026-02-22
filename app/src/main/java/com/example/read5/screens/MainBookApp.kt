@@ -38,14 +38,12 @@ fun MainBookApp () {
     Scaffold(
         topBar = {
             // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
-            if (currentRoute == "bookshelf") {
-                TopBarContent(
-                    navController, searchItemInViewModel,
-                    displayMode,
-                    onModeChange = {
-                        displayMode = it
-                    }
-                )
+            if (currentRoute != null) {
+                if (currentRoute.startsWith("bookshelf")) {
+                    TopBarContent(
+                        navController, searchItemInViewModel,
+                    )
+                }
             }
 
         },
@@ -57,11 +55,11 @@ fun MainBookApp () {
         }
     ) { padding ->
         MainNavGraph(navController,
-            "bookshelf",
+            "bookshelf/bookdesk",
             padding,
             searchItemInViewModel,
             storeHouseViewModel,
-            displayMode)
+           )
 }
 }
 

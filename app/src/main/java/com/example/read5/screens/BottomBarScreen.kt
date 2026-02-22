@@ -19,7 +19,7 @@ fun BottomBarScreen(navController: NavController) {
     val currentRoute = navBackStackEntry?.destination?.route
     NavigationBar {
         val items = listOf(
-            NavItem("书架", "bookshelf"),
+            NavItem("书架", "bookshelf/bookdesk"),
             NavItem("我", "my_view")
         )
 

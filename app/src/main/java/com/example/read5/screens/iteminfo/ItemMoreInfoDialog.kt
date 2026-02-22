@@ -41,7 +41,10 @@ fun ItemMoreInfoDialog(
             Text(text = "${item.path}")
             Button(
                 onClick = {
-                    updatedItem.updateByIsShow(key, false) // ✅ 放在 onClick 里！
+                    val temp = !item.isShow
+                    updatedItem.updateByIsShow(key, temp) // ✅ 放在 onClick 里！
+                    updatedItem.updateByCount(item.id, temp)
+
                     onDismiss()
                 },
                 modifier = Modifier

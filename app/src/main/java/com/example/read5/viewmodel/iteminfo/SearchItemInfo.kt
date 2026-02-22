@@ -29,15 +29,17 @@ class SearchItemInfo @Inject constructor(
     private val _dataSource = MutableStateFlow<SearchItemDataSource>(
         SearchItemDataSource.searchByCategory(GlobalSettings.getRecentStoreHouse())
      )
+    // ✅ 保存当前的分类ID
+    private var _currentCategoryId = MutableStateFlow(GlobalSettings.getRecentStoreHouse())
+
 
     // 2. 使用 stateIn 转换为 StateFlow<PagingData<ItemInfo>>
     @OptIn(ExperimentalCoroutinesApi::class)
     val items: StateFlow<PagingData<ItemInfo>> = _dataSource
         .flatMapLatest { source ->
             when (source) {
-                is SearchItemDataSource.searchByCategory -> {
-                    Log.d(TAG, "searchByCategory")
-                    itemInfoRepository.searchByCategory(source.categoryId).cachedIn(viewModelScope)  // ✅ 重要
+                is SearchItemDataSource.searchByCategory  -> {
+                    itemInfoRepository.searchByCategory(source.categoryId).cachedIn(viewModelScope)
                 }
 
                 is SearchItemDataSource.searchById ->{
@@ -57,7 +59,7 @@ class SearchItemInfo @Inject constructor(
                 }
 
                 is SearchItemDataSource.sortByField ->{
-                    itemInfoRepository.sortBySortField(source.name, source.ascending, source.category).cachedIn(viewModelScope)  // ✅ 重要
+                    itemInfoRepository.sortBySortField(source.field, source.ascending, source.categoryId).cachedIn(viewModelScope)  // ✅ 重要
                 }
 
                 // 新增：处理历史记录
@@ -75,6 +77,8 @@ class SearchItemInfo @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = PagingData.empty()
         )
+
+
     fun history() {
         _dataSource.value = SearchItemDataSource.history()
     }
@@ -98,8 +102,10 @@ class SearchItemInfo @Inject constructor(
     fun searchByIsCollect() {
         _dataSource.value = SearchItemDataSource.searchByIsCollect
     }
-    fun sortBySortField(sortOption: SortOption, category: Long) {
+    fun sortBySortField(sortOption: SortOption, ascending: Boolean) {
         //ascending: true 升序, false 降序
-        _dataSource.value = SearchItemDataSource.sortByField(sortOption.field, sortOption.ascending, category)
+        _dataSource.value = SearchItemDataSource.sortByField(sortOption.field, ascending, _currentCategoryId.value)
     }
+
+
 }

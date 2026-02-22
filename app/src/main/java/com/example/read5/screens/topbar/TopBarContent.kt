@@ -25,8 +25,6 @@ import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 @Composable
 fun TopBarContent(navController: NavController,
         searchItemInfo: SearchItemInfo,
-        displayMode: String,
-        onModeChange: (String) -> Unit // 新增
 ) {
     // 用于控制菜单展开状态
     var expanded by remember { mutableStateOf(false) }
@@ -79,10 +77,10 @@ fun TopBarContent(navController: NavController,
                                 selectedTab = index
                                 when (tabName){
                                     "历史记录" -> {
-                                        onModeChange("history")
+                                        navController.navigate("bookshelf/history")
                                     }
-                                    "书桌" -> onModeChange("bookdesk")
-                                    "书架" -> onModeChange("bookshelf")
+                                    "书桌" -> navController.navigate("bookshelf/bookdesk")
+                                    "书架" -> navController.navigate("bookshelf/bookshelf")
                                 }
 
                             }

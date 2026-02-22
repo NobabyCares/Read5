@@ -1,5 +1,6 @@
 package com.example.read5.viewmodel
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.example.read5.bean.ItemInfo
@@ -23,6 +24,7 @@ class ImportFileViewModel @Inject constructor(
     private val storeHouseRepository: StoreHouseRepository, // ✅ 注入 Repository
     private val itemInfoRepository: ItemInfoRepository
 ) : ViewModel() {
+    @SuppressLint("NewApi")
     suspend fun importStoreHouse(
         context: Context,
         name: String,
@@ -51,6 +53,7 @@ class ImportFileViewModel @Inject constructor(
         storeHouseRepository.updateByCount(id, allBooks.size.toLong())
 
         GlobalSettings.setRecentStoreHouse(id)
+        GlobalSettings.setitemCount(allBooks.size.toLong())
 
         return@withContext id
     }

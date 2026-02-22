@@ -14,6 +14,9 @@ interface  StoreHouseDao {
     @Query("SELECT * FROM store_house_table")
     fun getAll(): Flow<List<StoreHouse>>
 
+    @Query("SELECT * FROM store_house_table WHERE id = :id")
+    fun searchById(id: Long): StoreHouse
+
     // 🔹 插入一个书库
     @Insert
     suspend fun insert(storeHouse: StoreHouse): Long // 返回插入的 id

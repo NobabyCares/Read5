@@ -1,35 +1,53 @@
 package com.example.read5.screens.sortbar
 
+import com.example.read5.global.GlobalSettings
+
 
 enum class SortField {
     NAME,
     LAST_READ_TIME,
     READ_PROGRESS,
-    TOTAL_READ_TIME
+    TOTAL_READ_TIME,
+    FILE_SIZE,
+    CREATE_TIME
 }
-
-// 排序选项（扁平化，直接代表一个可选动作）
 sealed class SortOption(
     val label: String,
     val field: SortField,
-    val ascending: Boolean,
+    val key: Int
 ) {
-    object NameAsc : SortOption("名称 (A→Z)", SortField.NAME, true)
-    object NameDesc : SortOption("名称 (Z→A)", SortField.NAME, false)
-
-    object TimeAsc : SortOption("上次阅读时间 (旧→新)", SortField.LAST_READ_TIME, true)
-    object TimeDesc : SortOption("上次阅读时间 (新→旧)", SortField.LAST_READ_TIME, false)
-
-    //这里进度存储(schedule)的是负数，所以asc和desc需要交换一下位置
-    object ProgressDesc : SortOption("进度 (高→低)", SortField.READ_PROGRESS, true)
-    object ProgressAsc : SortOption("进度 (低→高)", SortField.READ_PROGRESS, false)
-
-    object TotalReadTimeAsc : SortOption("时间 (低→高)", SortField.TOTAL_READ_TIME, true)
-    object TotalReadTimeDesc : SortOption("时间 (高→低)", SortField.TOTAL_READ_TIME, false)
+    object Name : SortOption("名称", SortField.NAME, 1)
+    object LastReadTime : SortOption("上次阅读", SortField.LAST_READ_TIME, 2)
+    object Progress : SortOption("进度", SortField.READ_PROGRESS, 3)
+    object TotalReadTime : SortOption("总时长", SortField.TOTAL_READ_TIME, 4)
+    object FileSize : SortOption("文件大小", SortField.FILE_SIZE, 5)
+    object CreateTime : SortOption("创建时间", SortField.CREATE_TIME, 6)
 
     companion object {
-        val default = NameAsc
-        val all = listOf(NameAsc, NameDesc, TimeDesc, TimeAsc, ProgressDesc, ProgressAsc, TotalReadTimeDesc, TotalReadTimeAsc)
+        val default: SortOption by lazy { Name }
+
+        // ✅ 修复点 2: 使用 lazy
+        val all: List<SortOption> by lazy {
+            listOf(
+                Name,
+                LastReadTime,
+                Progress,
+                TotalReadTime,
+                FileSize,
+                CreateTime
+            )
+        }
     }
 }
-
+fun getSortOptions(): SortOption {
+    val key = GlobalSettings.getSortType()
+    return when (key) {
+        SortOption.Name.key -> SortOption.Name
+        SortOption.LastReadTime.key -> SortOption.LastReadTime
+        SortOption.Progress.key -> SortOption.Progress
+        SortOption.TotalReadTime.key -> SortOption.TotalReadTime
+        SortOption.FileSize.key -> SortOption.FileSize
+        SortOption.CreateTime.key -> SortOption.CreateTime
+        else -> SortOption.Name
+    }
+}

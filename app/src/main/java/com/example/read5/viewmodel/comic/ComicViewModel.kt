@@ -223,7 +223,7 @@ class ComicViewModel @Inject constructor(
         // ✅ 关键：只有位置变化了才保存
 
         autoSaveJob = viewModelScope.launch {
-            delay(3000) // 等待 3 秒，确认用户已停止操作
+            delay(2000) // 等待 3 秒，确认用户已停止操作
             if (lastCurrentOffsetY == currentOffsetY) {
                 return@launch
             }

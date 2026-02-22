@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -48,5 +49,16 @@ class StoreHouseViewModel @Inject constructor(
         viewModelScope.launch {
             storeHouseRepository.deleteStoreHouse(id)
         }
+    }
+
+    // ✅ 通过 ID 获取单个仓库的 Flow
+    fun getStoreHouseById(id: Long): StateFlow<StoreHouse?> {
+        return storeHouses.map { list ->
+            list.find { it.id == id }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
     }
 }

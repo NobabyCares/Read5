@@ -34,6 +34,8 @@ import com.example.read5.global.SimplePasswordManager
 import com.example.read5.screens.MainBookApp
 import com.example.read5.screens.auth.SimplePasswordScreen
 import com.example.read5.screens.readview.comic.SimpleProgressBar
+import com.example.read5.screens.sortbar.SortBarScreen
+import com.example.read5.screens.sortbar.SortOption
 import com.example.read5.ui.theme.Read5Theme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -62,7 +64,6 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     // 主应用界面（始终存在，状态不会丢失）
                     MainBookApp()
-//                    SimpleProgressBar()
 
                     // 密码覆盖层（需要时显示在上面）
                     if (showPasswordOverlay) {
@@ -109,39 +110,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
-fun SliderDemo() {
-    var progress by remember { mutableStateOf(0.5f) }
-    val TAG = "SliderDemo"
+fun TestSortOptionScreen() {
+    // 尝试获取默认排序选项
+    val currentSortType by remember { mutableStateOf(SortOption.default) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "当前进度: ${String.format("%.2f", progress)}",
-            style = MaterialTheme.typography.titleMedium
-        )
+    Column {
+        // 这一行会触发对 currentSortType.label 的访问
+        // 如果 SortOption.default 的 label 是 null，这里就会 NPE！
+        Text("当前排序: ${currentSortType.label}")
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // 👇 核心：Slider 用法
-        Slider(
-            value = progress,                          // 当前值（必须是 State）
-            onValueChange = { newValue ->
-                progress = newValue                    // 更新状态
-                Log.d(TAG, "Dragging: $newValue")      // 拖动中日志
-            },
-            onValueChangeFinished = {
-                Log.d(TAG, "Drag finished at: $progress") // 拖动结束日志
-            },
-            valueRange = 0f..1f,                       // 可选：限制范围
-            steps = 9,                                 // 可选：分 10 段（9 个刻度）
-            modifier = Modifier.fillMaxWidth()
-        )
+        // 再尝试遍历 all 列表
+        SortOption.all.forEach { option ->
+            Text("选项: ${option.label}") // 同样，如果 any option.label is null -> crash
+        }
     }
 }

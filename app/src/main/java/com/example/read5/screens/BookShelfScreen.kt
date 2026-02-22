@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -32,14 +34,23 @@ import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
+import com.example.read5.bean.StoreHouse
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.iteminfo.ItemInfoScreen
+import com.example.read5.screens.miniweight.LazyGridScrollbar
+import com.example.read5.screens.miniweight.ScrollToTopButton
 import com.example.read5.screens.sortbar.SortBarScreen
+import com.example.read5.screens.sortbar.SortField
+import com.example.read5.screens.sortbar.SortOption
+import com.example.read5.screens.sortbar.getSortOptions
 import com.example.read5.screens.storehouse.StoreHouseCard
 import com.example.read5.screens.storehouse.StoreHouseInputDialog
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 import com.example.read5.singledata.DocumentHolder
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
+import java.lang.Long.MAX_VALUE
 
 @Composable
 fun BookShelfScreen(
@@ -47,24 +58,41 @@ fun BookShelfScreen(
     storeHouseModel: StoreHouseViewModel,
     searchItemInfo: SearchItemInfo,
     displayMode: String,
-    onModeChange: (String) -> Unit = {} // 新增
+
 ) {
     val TAG = "BookShelfScreen"
+
     val storeHouses by storeHouseModel.storeHouses.collectAsStateWithLifecycle()
+    val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
+
     val isShow by storeHouseModel.isShow
     var isImport by remember { mutableStateOf(false) }
-    val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
+
+    val gridState = rememberLazyGridState()
+    val coroutineScope = rememberCoroutineScope()
+
+    val showScrollToTop = remember { mutableStateOf(false) }
+    var currentSortType by remember { mutableStateOf(getSortOptions()) }
+    var ascOrDesc by remember { mutableStateOf(GlobalSettings.getAscOrdesc()) }
+
+    val storeCount = GlobalSettings.getitemCount()
+
+
 
 
     // ✅ 使用 LaunchedEffect 控制初始化，只在第一次加载时执行
     // 使用 displayMode 决定加载什么数据
-    LaunchedEffect(displayMode) {
+    LaunchedEffect(displayMode, currentSortType, ascOrDesc) {
         when (displayMode) {
             "history" -> {
                 searchItemInfo.history()
                 storeHouseModel.isShow(false)
             }
             "bookdesk" -> {
+                searchItemInfo.sortBySortField(currentSortType, ascOrDesc)
+                storeHouseModel.isShow(false)
+            }
+            "category" -> {
                 searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
                 storeHouseModel.isShow(false)
             }
@@ -77,10 +105,14 @@ fun BookShelfScreen(
         }
     }
 
-
-    val gridState = rememberLazyGridState()
-    val coroutineScope = rememberCoroutineScope()
-    val showScrollToTop = remember { mutableStateOf(false) }
+    // 在 Box 之前添加这个 LaunchedEffect
+    LaunchedEffect(gridState) {
+        snapshotFlow { gridState.firstVisibleItemIndex }
+            .collect { index ->
+                // 当滚动超过 3 个 item 时显示按钮
+                showScrollToTop.value = index > 3
+            }
+    }
 
 
 
@@ -105,8 +137,10 @@ fun BookShelfScreen(
                             onClick = {
                                 if (storeHouse.id != 1L) {
                                     GlobalSettings.setRecentStoreHouse(storeHouse.id)
+                                    GlobalSettings.setitemCount(storeHouse.count)
                                     searchItemInfo.searchByCategory(storeHouse.id)
                                     storeHouseModel.isShow(false)
+                                    navController.navigate("bookshelf/category")
                                 } else {
                                     isImport = true
                                 }
@@ -129,14 +163,33 @@ fun BookShelfScreen(
             }
 
             SortBarScreen(
-                GlobalSettings.getRecentStoreHouse(),
-                searchItemInfo = searchItemInfo
+                currentSortType = currentSortType,
+                isAscending = ascOrDesc,
+                onSortChanged =  {  sortOption, isAscending ->
+                    currentSortType = sortOption
+                    ascOrDesc = isAscending
+                    GlobalSettings.setSortType(sortOption.key)
+                    GlobalSettings.setAscOrdesc(isAscending)
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
             if (isImport) {
                 StoreHouseInputDialog { isImport = false }
             }
         }
+
+        // 滚动条
+        // 直接用系统滚动条
+        // 滚动条
+        LazyGridScrollbar(
+            gridState = gridState,
+            totalItems = storeCount,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 4.dp)
+        )
+
 
         // 返回顶部按钮 - 调整位置到SortBar上方
         if (showScrollToTop.value) {
@@ -154,23 +207,4 @@ fun BookShelfScreen(
     }
 }
 
-/**
- * 返回顶部悬浮按钮
- */
-@Composable
-fun ScrollToTopButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    FloatingActionButton(
-        onClick = onClick,
-        modifier = modifier.size(48.dp),
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    ) {
-        Icon(
-            imageVector = Icons.Default.KeyboardArrowUp,
-            contentDescription = "返回顶部"
-        )
-    }
-}
+
