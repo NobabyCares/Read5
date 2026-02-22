@@ -64,7 +64,7 @@ fun FeatureItem(
         shape = MaterialTheme.shapes.medium
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically, // 确保行内所有组件垂直居中
             horizontalArrangement = Arrangement.Start,
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
@@ -83,7 +83,7 @@ fun FeatureItem(
                         text = feature.title,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 4.dp) // 添加顶部内边距使文本不顶到方框上边
+                        modifier = Modifier // 不需要额外的padding.top，因为垂直居中了
                     )
                     Spacer(modifier = Modifier.height(4.dp)) // 添加间距以便于视觉效果更好
                 }
@@ -92,10 +92,4 @@ fun FeatureItem(
     }
 }
 
-data class Feature(
-    val id: String,
-    val title: String,
-    val icon: ImageVector? = null, // 可选图标
-    val action: FeatureAction
-)
 

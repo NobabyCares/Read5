@@ -80,7 +80,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
         // 初始检查是否需要显示密码
         checkPasswordStatus()
     }

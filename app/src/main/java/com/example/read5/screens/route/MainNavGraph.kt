@@ -17,6 +17,7 @@ import androidx.navigation.navArgument
 import com.example.read5.screens.BookShelfScreen
 import com.example.read5.screens.CenteredText
 import com.example.read5.screens.auth.SettingsScreen
+import com.example.read5.screens.myview.DatabaseQueryScreen
 import com.example.read5.screens.myview.IsShowScreen
 import com.example.read5.screens.myview.MyViewScreen
 import com.example.read5.screens.readview.comic.HorizontalComicReader
@@ -87,6 +88,11 @@ fun MainNavGraph(
         //横屏阅读
         composable("horizon_comic_view") {
             HorizontalComicReader(navController = navController)
+        }
+
+        //横屏阅读
+        composable("all_data_search") {
+            DatabaseQueryScreen()
         }
 
 

@@ -42,9 +42,10 @@ fun MyViewScreen(
 ) {
     // ✅ 配置式声明所有功能（清晰、易读、易改）
     val features = listOf(
-        Feature("hidden", "隐藏内容", Icons.Default.Home, FeatureAction.ShowHiddenItems),
-        Feature("favorites", "收藏夹", Icons.Default.Star, FeatureAction.ShowIsCollectItems),
-        Feature("password", "设置密码", Icons.Default.Star, FeatureAction.SimplePassword),
+        Feature(1,  "隐藏内容", Icons.Default.Home, FeatureAction.ShowHiddenItems),
+        Feature(2,  "收藏夹", Icons.Default.Star, FeatureAction.ShowIsCollectItems),
+        Feature(3,"设置密码", Icons.Default.Star, FeatureAction.SimplePassword),
+        Feature(4, "数据库查询", Icons.Default.Star, FeatureAction.NavigateTo("all_data_search")),
         //供参考
         /*Feature("history", "阅读历史", Icons.Default.Home, FeatureAction.NavigateTo("reading_history")),
         Feature("tags", "标签管理", Icons.Default.Home, FeatureAction.NavigateTo("tags")),
@@ -65,11 +66,14 @@ fun MyViewScreen(
             is FeatureAction.SimplePassword -> {
                 navHostController.navigate("simple_password")
             }
-            is FeatureAction.OpenSettings -> {
-                // TODO: 打开设置
+            is FeatureAction.NavigateTo -> {
+                navHostController.navigate(action.route)
             }
+            is FeatureAction.OpenSettings -> {
+                navHostController.navigate("settings")
+            }
+                // TODO: 打开设置
 
-            is FeatureAction.NavigateTo -> TODO()
         }
     }
 

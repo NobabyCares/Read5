@@ -1,52 +1,44 @@
 package com.example.read5.utils
 
-import android.annotation.SuppressLint
 import java.io.File
-import java.nio.file.Files
+import java.io.FileInputStream
 import java.security.MessageDigest
 
 object HashCalculate {
 
     private const val DEFAULT_SAMPLE_SIZE = 1_000_000L // 1 MB
+    private const val BUFFER_SIZE = 8192 // 8 KB
 
     /**
-     * 计算文件的快速哈希：读取前 [sampleSize] 字节
-     * 如果文件小于 sampleSize，则读取全部
+     * 仅基于文件的前 1MB 二进制内容计算 SHA-256 哈希。
+     * - 如果文件不存在或无法读取，返回固定的错误哈希 "0000000000000000000000000000000000000000000000000000000000000000"。
+     * - 不依赖文件大小、修改时间、路径等任何外部因素。
      */
-    @SuppressLint("NewApi")
-    fun calculateContentBasedHash(file: File, sampleSize: Long = DEFAULT_SAMPLE_SIZE): String {
+    fun calculateContentBasedHash(file: File): String {
         if (!file.exists() || !file.isFile) {
-            return fallbackHash(file)
+            return "0".repeat(64) // 64个0，代表SHA-256全零哈希
         }
 
         return try {
             val digest = MessageDigest.getInstance("SHA-256")
-            var totalRead = 0L
-            val buffer = ByteArray(8192) // 8KB buffer for efficiency
+            var totalBytesRead = 0L
 
-            Files.newInputStream(file.toPath()).use { input ->
-                while (totalRead < sampleSize) {
-                    val remaining = sampleSize - totalRead
-                    val toRead = if (remaining > buffer.size) buffer.size else remaining.toInt()
-                    val bytesRead = input.read(buffer, 0, toRead)
-                    if (bytesRead == -1) break // EOF
+            FileInputStream(file).use { input ->
+                val buffer = ByteArray(BUFFER_SIZE)
+                while (totalBytesRead < DEFAULT_SAMPLE_SIZE) {
+                    val bytesToRead = minOf(BUFFER_SIZE.toLong(), DEFAULT_SAMPLE_SIZE - totalBytesRead).toInt()
+                    val bytesRead = input.read(buffer, 0, bytesToRead)
+                    if (bytesRead == -1) break // 文件已读完
+
                     digest.update(buffer, 0, bytesRead)
-                    totalRead += bytesRead
+                    totalBytesRead += bytesRead
                 }
             }
+
             digest.digest().joinToString("") { "%02x".format(it) }
         } catch (e: Exception) {
-            fallbackHash(file)
+            // 任何IO异常都返回固定错误哈希
+            "0".repeat(64)
         }
-    }
-
-    /**
-     * Fallback: 使用文件大小 + 最后修改时间生成哈希
-     */
-    private fun fallbackHash(file: File): String {
-        val fallbackBytes = "${file.length()}-${file.lastModified()}".toByteArray(Charsets.UTF_8)
-        return MessageDigest.getInstance("SHA-256")
-            .digest(fallbackBytes)
-            .joinToString("") { "%02x".format(it) }
     }
 }
