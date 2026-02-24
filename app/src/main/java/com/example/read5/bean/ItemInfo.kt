@@ -3,6 +3,7 @@ package com.example.read5.bean
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.example.read5.global.DeviceIdentification
 import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
@@ -12,7 +13,7 @@ import java.util.Locale
 @Serializable
 @Entity(
     tableName = "item_info_table",
-    primaryKeys = ["path", "hash", "androidId"],
+    // ✅ 移除 primaryKeys，改用单字段主键 id
     foreignKeys = [
         ForeignKey(
             entity = StoreHouse::class,
@@ -24,46 +25,43 @@ import java.util.Locale
     indices = [
         Index("category"),
         Index("name"),
-        Index("id")
+        // ✅ 新增：用 path + androidId 保证唯一性（核心！）
+        Index(
+            value = ["path", "androidId"],
+            unique = true
+        )
     ]
 )
 data class ItemInfo(
-//    id，不做主键，已经有联合主键，用于查询
+    @PrimaryKey(autoGenerate = true) // Room 会映射到 rowid，插入时传 0 即可
     var id: Long = 0,
+
     var name: String = "",
     var baseCode: String = "",
     var author: String = "",
     var path: String = "",
     var androidId: String = DeviceIdentification.androidId,
-    //    总页数
+
     var totalPage: Int = 0,
-    //    上次阅读的位置
     var currentPage: Int = 0,
-    // 如果为false 就是默认渲染第一页,如果为true, 就在应用文件夹cover选择名为"id.jpg"的图片
-    var cover: Boolean =false,
-    //    创建时间
+    var cover: Boolean = false,
+
     var createTime: Long = 0L,
-    //    最后阅读时间
     var lastReadTime: Long = 0L,
-    //    总的阅读时间，单位秒
     var totalReadTime: Long = 0L,
-    //    进度
-    var schedule:Int = 0,
-    //    黑名单,默认true 显示, 反之隐藏
-    var isShow:Boolean = true,
-    //    hash
-    var hash: String = "",
-    //    分类,属于那个仓库
+    var schedule: Int = 0,
+    var isShow: Boolean = true,
+
+    var hash: String = "", // hash 保留，但不参与唯一性
     var category: Long,
-    //属于那种类型,这里我是想要用于分类连续的书籍, 比如进击巨人的漫画集中在一起
+
+    // ⚠️ 注意：comicType 是单分类，未来建议用中间表支持多分类
     var comicType: Int = -1,
-    //    是否收藏
+
     var isCollect: Boolean = false,
-    //    文件大小
     var fileSize: Long = 0,
-    var fileType : String = ""
-){
-    // ✅ 添加一个可读时间字符串（基于 lastReadTime）
+    var fileType: String = ""
+) {
     val lastReadTimeFormatted: String
         get() = if (lastReadTime > 0) {
             SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(lastReadTime))
@@ -71,7 +69,6 @@ data class ItemInfo(
             ""
         }
 
-    // ✅ 同样可以为 createTime 添加
     val createTimeFormatted: String
         get() = if (createTime > 0) {
             SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(createTime))
@@ -79,5 +76,3 @@ data class ItemInfo(
             ""
         }
 }
-
-

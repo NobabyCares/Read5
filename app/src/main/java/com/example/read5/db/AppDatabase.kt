@@ -8,6 +8,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.read5.bean.ComicType
+import com.example.read5.bean.ItemComicTypeCrossRef
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
 import com.example.read5.bean.Tag
@@ -25,7 +26,8 @@ import kotlinx.coroutines.launch
         StoreHouse::class,
         ItemInfo::class,
         Tag::class,
-        ComicType::class     ], // 👈 告诉 Room 有哪些表
+        ComicType::class,
+        ItemComicTypeCrossRef::class], // 👈 告诉 Room 有哪些表
     version = 1,                    // 初始版本
     exportSchema = false            // 开发阶段可关掉 schema 导出
 )

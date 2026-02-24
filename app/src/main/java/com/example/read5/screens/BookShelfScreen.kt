@@ -79,7 +79,6 @@ fun BookShelfScreen(
 
 
 
-
     // ✅ 使用 LaunchedEffect 控制初始化，只在第一次加载时执行
     // 使用 displayMode 决定加载什么数据
     LaunchedEffect(displayMode, currentSortType, ascOrDesc) {
@@ -98,6 +97,9 @@ fun BookShelfScreen(
             }
             "bookshelf" -> {
                 storeHouseModel.isShow(true)
+            }
+            "comicType" -> {
+
             }
             else -> {
                Log.e(TAG, "Invalid displayMode: $displayMode")

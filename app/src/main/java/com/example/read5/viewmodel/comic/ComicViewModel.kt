@@ -54,7 +54,7 @@ class ComicViewModel @Inject constructor(
     private val _viewportEvents = MutableSharedFlow<ViewportEvent>(replay = 0, extraBufferCapacity = 5)
 
     //    key,用于数据库更新，因为数据库是联合主键
-    var key: ItemKey? = null
+    var key: Long = 0
     // 新增：用于控制延迟保存的 Job
     private var autoSaveJob: Job? = null
     //当前阅读位置和以前阅读位置，这样就可以自动保存的时候跳过重复
@@ -107,7 +107,7 @@ class ComicViewModel @Inject constructor(
     suspend fun initLoader(context: Context, itemInfo: ItemInfo): VirtualCanvas?{
         //把需要的信息都获取了,路径, 和key
         val path = itemInfo.path
-        key = ItemKey(androidId = itemInfo.androidId, path = itemInfo.path, hash = itemInfo.hash)
+        key = itemInfo.id
         totalReadTime = itemInfo.totalReadTime
         lastReadTime = System.currentTimeMillis()
         //获取所有图片信息,名称等
@@ -229,11 +229,11 @@ class ComicViewModel @Inject constructor(
                 totalReadTime += (System.currentTimeMillis() - lastReadTime)
                 lastReadTime = System.currentTimeMillis()
                 val schedule = ((currentOffsetY.toFloat() / virtualCanvas!!.totalHeight) * 100f).roundToInt()
-                itemInfoRepository.updateBySchedule(key = key, schedule = schedule)
+                itemInfoRepository.updateBySchedule(id = key, schedule = schedule)
                 // 保存当前 offset（注意：这里用 currentOffsetY）
-                itemInfoRepository.updateByCurrentPage(currentPage = currentOffsetY, key = key)
-                itemInfoRepository.updateByLastReadTime(key = key, System.currentTimeMillis())
-                itemInfoRepository.updateByTotalReadTime(key = key, totalReadTime)
+                itemInfoRepository.updateByCurrentPage(currentPage = currentOffsetY, id = key)
+                itemInfoRepository.updateByLastReadTime(id = key, System.currentTimeMillis())
+                itemInfoRepository.updateByTotalReadTime(id = key, totalReadTime)
                 lastCurrentOffsetY = currentOffsetY
 
             }

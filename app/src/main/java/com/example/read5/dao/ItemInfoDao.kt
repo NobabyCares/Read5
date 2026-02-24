@@ -17,8 +17,6 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ItemInfoDao {
 
-    @Query("SELECT MAX(id) FROM item_info_table")
-    suspend fun getMaxId(): Long?
 
     // 按 category 分页,只显示isShow =1的
     @Query("SELECT * FROM item_info_table WHERE category = :categoryId AND isShow = 1 " +
@@ -121,36 +119,29 @@ interface ItemInfoDao {
             "ORDER BY name COLLATE NOCASE ASC")
     fun searchByIsCollect(): PagingSource<Int, ItemInfo>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(itemInfo: List<ItemInfo>): LongArray
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(itemInfo: ItemInfo): Long
 
     // 只更新收藏状态
-    @Query("UPDATE item_info_table SET isCollect = :isCollect WHERE path = :path AND hash = :hash AND androidId = :androidId")
-    suspend fun updateByCollect(path: String, hash: String, androidId: String, isCollect: Boolean)
+    @Query("UPDATE item_info_table SET isCollect = :isCollect WHERE id = :id")
+    suspend fun updateByCollect(id: Long, isCollect: Boolean)
 
     // 只更新阅读位置
-    @Query("UPDATE item_info_table SET currentPage = :currentPage WHERE path = :path AND hash = :hash AND androidId = :androidId")
-    suspend fun updateByCurrentPage(path: String, hash: String, androidId: String, currentPage: Int)
-    @Query("UPDATE item_info_table SET schedule = :schedule WHERE path = :path AND hash = :hash AND androidId = :androidId")
-    suspend fun updateBySchedule(path: String, hash: String, androidId: String, schedule: Int)
+    @Query("UPDATE item_info_table SET currentPage = :currentPage WHERE id = :id")
+    suspend fun updateByCurrentPage(id: Long, currentPage: Int)
+    @Query("UPDATE item_info_table SET schedule = :schedule WHERE id = :id")
+    suspend fun updateBySchedule(id: Long, schedule: Int)
 
-    @Query("UPDATE item_info_table SET isShow = :isShow WHERE path = :path AND hash = :hash AND androidId = :androidId")
-    suspend fun updateByIsShow(path: String, hash: String, androidId: String, isShow: Boolean): Int
+    @Query("UPDATE item_info_table SET isShow = :isShow WHERE id = :id")
+    suspend fun updateByIsShow(id: Long, isShow: Boolean): Int
 
-    @Query("UPDATE item_info_table SET lastReadTime = :lastReadTime WHERE path = :path AND hash = :hash AND androidId = :androidId ")
-    suspend fun updateByLastReadTime(path: String, hash: String, androidId: String, lastReadTime: Long)
+    @Query("UPDATE item_info_table SET lastReadTime = :lastReadTime WHERE id = :id ")
+    suspend fun updateByLastReadTime(id: Long, lastReadTime: Long)
     //总的阅读时间
-    @Query("UPDATE item_info_table SET totalReadTime = :totalReadTime WHERE path = :path AND hash = :hash AND androidId = :androidId ")
-    suspend fun updateByTotalReadTime(path: String, hash: String, androidId: String, totalReadTime: Long)
-    // 👇 新增：带 ID 分配的批量插入（关键！）
-    @Transaction
-    suspend fun insertAllWithAutoId(items: List<ItemInfo>): LongArray { // 👈 返回 LongArray
-        val currentMax = getMaxId()?: 0L
-        val newItems = items.mapIndexed { index, item ->
-            item.copy(id = currentMax + 1 + index)
-        }
-        val rowIds = insertAll(newItems) // 这已经是 LongArray！
-        return rowIds // ✅ 直接返回，无需 .toList()
-    }
+    @Query("UPDATE item_info_table SET totalReadTime = :totalReadTime WHERE id = :id ")
+    suspend fun updateByTotalReadTime(id: Long, totalReadTime: Long)
+
 
 }

@@ -27,19 +27,25 @@ interface ItemInfoRepository {
     fun searchByIsCollect(): Flow<PagingData<ItemInfo>>
 
 
-    suspend fun insert(item: List<ItemInfo>)
+    suspend fun insert(item: List<ItemInfo>): LongArray
+
+    suspend fun insert(item: ItemInfo): Long
+
+
     //更新收藏状态
-    suspend fun updateByCollect(key: ItemKey, isCollect: Boolean)
+    suspend fun updateByCollect(id: Long, isCollect: Boolean)
     // 只更新阅读位置
-    suspend fun updateByCurrentPage(key: ItemKey, currentPage: Int)
+    suspend fun updateByCurrentPage(id: Long, currentPage: Int)
     //更新隐藏状态
-    suspend fun updateByIsShow(key: ItemKey, isShow: Boolean): Int
+    suspend fun updateByIsShow(id: Long, isShow: Boolean): Int
     //更新阅读时间
-    suspend fun updateByLastReadTime(key: ItemKey, lastReadTime: Long)
+    suspend fun updateByLastReadTime(id: Long, lastReadTime: Long)
     //更新进度
-    suspend fun updateBySchedule(key: ItemKey, schedule: Int)
+    suspend fun updateBySchedule(id: Long, schedule: Int)
     //更新总的阅读时间
-    suspend fun updateByTotalReadTime(key: ItemKey, totalReadTime: Long)
+    suspend fun updateByTotalReadTime(id: Long, totalReadTime: Long)
+
+
     //排序方法
     fun sortBySortField(sortField: SortField, ascending: Boolean, category: Long): Flow<PagingData<ItemInfo>>
 
@@ -137,32 +143,36 @@ class ItemInfoRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun insert(item: List<ItemInfo>) {
-        itemInfoDao.insertAllWithAutoId(item)
+    override suspend fun insert(item: List<ItemInfo>): LongArray {
+        return itemInfoDao.insertAll(item)
     }
 
-    override suspend fun updateByCollect(key: ItemKey, isCollect: Boolean) {
-        itemInfoDao.updateByCollect(path = key.path, hash = key.hash, androidId = key.androidId, isCollect)
+    override suspend fun insert(item: ItemInfo): Long {
+        return itemInfoDao.insert(item)
     }
 
-    override suspend fun updateByCurrentPage(key: ItemKey, currentPage: Int) {
-        itemInfoDao.updateByCurrentPage(path = key.path, hash = key.hash, androidId = key.androidId, currentPage)
+    override suspend fun updateByCollect(id: Long, isCollect: Boolean) {
+        itemInfoDao.updateByCollect(id = id, isCollect)
     }
 
-    override suspend fun updateByIsShow(key: ItemKey, isShow: Boolean): Int {
-        return itemInfoDao.updateByIsShow(isShow = isShow,path = key.path, hash = key.hash, androidId = key.androidId)
+    override suspend fun updateByCurrentPage(id: Long, currentPage: Int) {
+        itemInfoDao.updateByCurrentPage(id = id, currentPage)
     }
 
-    override suspend fun updateByLastReadTime(key: ItemKey, lastReadTime: Long) {
-        itemInfoDao.updateByLastReadTime(path = key.path, hash = key.hash, androidId = key.androidId, lastReadTime)
+    override suspend fun updateByIsShow(id: Long, isShow: Boolean): Int {
+        return itemInfoDao.updateByIsShow(id =  id,isShow = isShow)
     }
 
-    override suspend fun updateBySchedule(key: ItemKey, schedule: Int) {
-        itemInfoDao.updateBySchedule(path = key.path, hash = key.hash, androidId = key.androidId, schedule =  schedule)
+    override suspend fun updateByLastReadTime(id: Long, lastReadTime: Long) {
+        itemInfoDao.updateByLastReadTime(id =  id, lastReadTime)
     }
 
-    override suspend fun updateByTotalReadTime(key: ItemKey, totalReadTime: Long) {
-        itemInfoDao.updateByTotalReadTime(path = key.path, hash = key.hash, androidId = key.androidId, totalReadTime)
+    override suspend fun updateBySchedule(id: Long, schedule: Int) {
+        itemInfoDao.updateBySchedule(id =  id, schedule =  schedule)
+    }
+
+    override suspend fun updateByTotalReadTime(id: Long, totalReadTime: Long) {
+        itemInfoDao.updateByTotalReadTime(id =  id, totalReadTime)
     }
 }
 

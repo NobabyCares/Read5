@@ -42,7 +42,7 @@ fun ItemMoreInfoDialog(
             Button(
                 onClick = {
                     val temp = !item.isShow
-                    updatedItem.updateByIsShow(key, temp) // ✅ 放在 onClick 里！
+                    updatedItem.updateByIsShow(item.id, temp) // ✅ 放在 onClick 里！
                     updatedItem.updateByCount(item.id, temp)
                     onDismiss()
                 },

@@ -147,7 +147,7 @@ fun ItemInfoScreen(
                             indication = ripple(color = Color.White.copy(alpha = 0.3f))
                         ) {
                             isCollect = !isCollect
-                            updateItemInfoViewModel.updateCollectStatus(key, isCollect)
+                            updateItemInfoViewModel.updateCollectStatus(item.id, isCollect)
                         }
 
                 )

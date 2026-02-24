@@ -32,33 +32,5 @@ import com.example.read5.viewmodel.comictype.ComicTypeSearchViewModel
 fun ComicTypeScreen(
     navController: NavHostController,
 ) {
-    val TAG = "ComicTypeScreen"
-    val comicTypeSearchViewModel: ComicTypeSearchViewModel = hiltViewModel()
-    val comicTypes = comicTypeSearchViewModel.items.collectAsLazyPagingItems()
 
-
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 96.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(comicTypes.itemCount){index ->
-                    comicTypes[index]?.let {
-                        ComicTypeItemScreen(
-                            navController = navController,
-                            comicType = it,)
-                    }
-                }
-            }
-        }
-    }
 }

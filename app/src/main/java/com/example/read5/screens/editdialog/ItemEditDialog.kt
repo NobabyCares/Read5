@@ -1,9 +1,15 @@
 package com.example.read5.screens.editdialog
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -23,35 +29,64 @@ import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 @Composable
 fun ItemEditDialog(
     item: ItemInfo,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit = {}
 ) {
-    val updatedItem: UpdateItemInfo = hiltViewModel()
-
-    //主键
-    val key = ItemKey(path = item.path, hash = item.hash, androidId =  item.androidId)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val TAG = "ItemEditDialog"
+    val updateItemInfoViewModel = hiltViewModel<UpdateItemInfo>()
+    // 使用 Column 来组织内容
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        // ===== 项目信息卡片 =====
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         ) {
-            Text(text = "${item.path}")
-            Button(
-                onClick = {
-                    val temp = !item.isShow
-                    updatedItem.updateByIsShow(key, temp) // ✅ 放在 onClick 里！
-                    updatedItem.updateByCount(item.id, temp)
-                    onDismiss()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp)
+            Column(
+                modifier = Modifier.padding(12.dp)
             ) {
-                Text("隐藏") // 或其他 UI 内容
+                Text(
+                    text = item.name ?: "未命名",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "作者: ${item.author ?: "未知"}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                // 显示当前状态
+                AssistChip(
+                    onClick = { },
+                    label = {
+                        Text(if (item.isShow) "已显示" else "已隐藏")
+                    },
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ===== 隐藏/显示按钮 =====
+        Button(
+            onClick = {
+                val newIsShow = !item.isShow
+                updateItemInfoViewModel.updateByIsShow(item.id, newIsShow)
+                updateItemInfoViewModel.updateByCount(item.id, newIsShow)
+                onDismiss()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (item.isShow)
+                    MaterialTheme.colorScheme.error
+                else
+                    MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Text(if (item.isShow) "隐藏项目" else "取消隐藏")
         }
     }
 }

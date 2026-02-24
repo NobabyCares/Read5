@@ -16,6 +16,7 @@ sealed class TopBarOption(
     object Home : TopBarOption("首页", 1)
     object History : TopBarOption("历史记录", 2)
     object BookDesk : TopBarOption("书架", 3)
+    object comicType : TopBarOption("分类", 3)
 
 
     companion object {
@@ -26,7 +27,8 @@ sealed class TopBarOption(
             listOf(
                Home,
                History,
-               BookDesk
+               BookDesk,
+            comicType
             )
         }
     }
@@ -39,6 +41,7 @@ fun getOptionRoute(option: TopBarOption): String {
         }
         2 -> "bookshelf/history"
         3 -> "bookshelf/bookshelf"
+        4 -> "bookshelf/comicType"
         else -> {"bookshelf/bookdesk"}
     }
 }

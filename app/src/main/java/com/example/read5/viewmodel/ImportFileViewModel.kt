@@ -2,6 +2,7 @@ package com.example.read5.viewmodel
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
@@ -31,6 +32,7 @@ class ImportFileViewModel @Inject constructor(
         type: String,
         contents: List<String>
     ): Long = withContext(Dispatchers.IO) {
+        val TAG = "ImportFileViewModel"
         val storeHouse = StoreHouse(name = name, type = type, count = 0, lastUpdateTime = System.currentTimeMillis())
         val id = storeHouseRepository.insert(storeHouse)
 
@@ -47,7 +49,7 @@ class ImportFileViewModel @Inject constructor(
         }
 
         if (allBooks.isNotEmpty()) {
-            itemInfoRepository.insert(allBooks) // 假设它是 suspend 函数
+            val flag: LongArray = itemInfoRepository.insert(allBooks)
         }
 
         storeHouseRepository.updateByCount(id, allBooks.size.toLong())
