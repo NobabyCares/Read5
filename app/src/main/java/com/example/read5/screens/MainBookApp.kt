@@ -31,10 +31,7 @@ fun MainBookApp () {
     val storeHouseViewModel: StoreHouseViewModel = hiltViewModel()
     val updateItemInfo: UpdateItemInfo = hiltViewModel()
 
-    //显示底部导航栏
-    val showBottomBar = currentRoute in listOf("vertical_comic_view", "horizon_comic_view")
 
-    var displayMode by rememberSaveable { mutableStateOf("bookdesk") }
     Scaffold(
         topBar = {
             // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
@@ -49,8 +46,10 @@ fun MainBookApp () {
         },
         bottomBar = {
             // 只在特定页面隐藏 BottomBar（比如 PDF 阅读页）
-            if (!showBottomBar) {
-                BottomBarScreen(navController)
+            if (currentRoute != null) {
+                if (currentRoute.startsWith("bookshelf")){
+                    BottomBarScreen(navController)
+                }
             }
         }
     ) { padding ->

@@ -11,7 +11,7 @@ import androidx.room.PrimaryKey
     ]
 )
 data class Tag(
-    @PrimaryKey(autoGenerate = true)
+    @PrimaryKey()
     val id: Long = 0,
     val name: String = ""
 )

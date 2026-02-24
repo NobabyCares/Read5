@@ -41,7 +41,7 @@ fun SearchBarScreen(
     OutlinedTextField(
         value = searchQuery,
         onValueChange = { searchQuery = it },
-        placeholder = { Text("一句顶一万句") },
+        placeholder = { Text("请输入关键字") },
         leadingIcon = {
             Icon(Icons.Filled.Search, contentDescription = "搜索")
         },

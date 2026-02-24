@@ -1,7 +1,6 @@
 package com.example.read5.screens.iteminfo
 
 import android.annotation.SuppressLint
-import android.text.format.Formatter.formatFileSize
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,11 +40,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.ItemKey
+import com.example.read5.screens.editdialog.ManagerEditDialog
 import com.example.read5.viewmodel.CoverExtractorViewModel
 import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 import java.time.Instant
@@ -238,9 +236,9 @@ fun ItemInfoScreen(
         }
 
     if(!isShowMoreInfoDialg){
-        ItemMoreInfoDialog( item = item, onDismiss = {
-            isShowMoreInfoDialg = true
-        })
+       ManagerEditDialog(item) {
+           isShowMoreInfoDialg = true
+       }
     }
 }
 

@@ -168,6 +168,7 @@ fun BookShelfScreen(
                 onSortChanged =  {  sortOption, isAscending ->
                     currentSortType = sortOption
                     ascOrDesc = isAscending
+                    searchItemInfo.sortBySortField(sortOption, isAscending)
                     GlobalSettings.setSortType(sortOption.key)
                     GlobalSettings.setAscOrdesc(isAscending)
                 },
@@ -179,8 +180,7 @@ fun BookShelfScreen(
             }
         }
 
-        // 滚动条
-        // 直接用系统滚动条
+
         // 滚动条
         LazyGridScrollbar(
             gridState = gridState,

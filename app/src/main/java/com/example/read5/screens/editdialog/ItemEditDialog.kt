@@ -1,4 +1,4 @@
-package com.example.read5.screens.iteminfo
+package com.example.read5.screens.editdialog
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,9 +21,9 @@ import com.example.read5.viewmodel.iteminfo.UpdateItemInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemMoreInfoDialog(
+fun ItemEditDialog(
     item: ItemInfo,
-    onDismiss: () -> Unit = {}
+    onDismiss: () -> Unit
 ) {
     val updatedItem: UpdateItemInfo = hiltViewModel()
 

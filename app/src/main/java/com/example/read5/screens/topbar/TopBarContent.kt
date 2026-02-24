@@ -1,5 +1,6 @@
 package com.example.read5.screens.topbar
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,19 +24,27 @@ import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 * 先不解决,无上大雅
 * */
 @Composable
-fun TopBarContent(navController: NavController,
-        searchItemInfo: SearchItemInfo,
+fun TopBarContent(
+    navController: NavController,
+    searchItemInfo: SearchItemInfo,
 ) {
+
+    val TAG = "TopBarContent"
     // 用于控制菜单展开状态
     var expanded by remember { mutableStateOf(false) }
     //用于控制搜索框的展开状态
     var isSearchExpanded by remember { mutableStateOf(false) }
 
-
-    val tabs = listOf("书桌", "历史记录", "书架") // ✅ 推荐
     //选择标签高亮
     var selectedTab by remember { mutableStateOf(0) }
 
+
+    // 👇 新增：拦截返回键
+    BackHandler(enabled = isSearchExpanded) {
+        isSearchExpanded = false
+        // 直接返回上一个页面，因为上一个页面就是当前页面的上一个状态
+        navController.popBackStack()
+    }
 
     Row(
         modifier = Modifier
@@ -44,13 +53,7 @@ fun TopBarContent(navController: NavController,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if(isSearchExpanded){
-            // ✅ 放在 BookShelfScreen 或 TopBar 的 Composable 内部
-            BackHandler(enabled = isSearchExpanded) {
-                // 退出搜索模式
-                isSearchExpanded = false
-                // 恢复默认分类（可选）
-                searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
-            }
+
             // 搜索框 + 背景遮罩（可选）
             Column(
                 modifier = Modifier
@@ -60,33 +63,29 @@ fun TopBarContent(navController: NavController,
                 SearchBarScreen(
                     searchItemInfo = searchItemInfo,
                     onDismiss = {
+                        // 退出搜索模式
                         isSearchExpanded = false
-                    },
+                        // 恢复默认分类（可选）
+                        searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
+                    }
                 )
             }
         }else{
             // 左侧标签
             // 当前选中的 tab 索引（可选，用于高亮）
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                tabs.forEachIndexed { index, tabName ->
+                TopBarOption.all.forEach { option ->
                     Text(
-                        text = tabName,
+                        text = option.title,
                         modifier = Modifier
                             .clickable {
                                 // 👇 点击逻辑：你可以用 index 或 tabName
-                                selectedTab = index
-                                when (tabName){
-                                    "历史记录" -> {
-                                        navController.navigate("bookshelf/history")
-                                    }
-                                    "书桌" -> navController.navigate("bookshelf/bookdesk")
-                                    "书架" -> navController.navigate("bookshelf/bookshelf")
-                                }
-
+                                selectedTab = option.key
+                                navController.navigate(getOptionRoute(option))
                             }
                             .padding(vertical = 8.dp), // 可选：增加点击区域
-                        style = if (index == selectedTab) {
-                            MaterialTheme.typography.titleMedium // 高亮样式
+                        style = if (option.key == selectedTab) {
+                            MaterialTheme.typography.titleLarge // 高亮样式
                         } else {
                             MaterialTheme.typography.bodyLarge
                         }

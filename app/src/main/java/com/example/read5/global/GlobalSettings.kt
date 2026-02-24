@@ -19,7 +19,7 @@ data class Config(
     var historyItems: List<ItemInfo> = emptyList(),
     var recentStoreHouse: Long = 1L,
     var scale: Float = 1f,
-    var readMode: String = "horizon_comic_view",
+    var readMode: String = "horizon_comic_view/0",
     var backgroundColorArgb: Long = 0xFF000000L, // Color.Black 的 ARGB
     var panSmoothing: Float = 1f,
     var sortType: Int = 1,
@@ -167,6 +167,7 @@ object GlobalSettings {
     }
 
     fun setReadMode(mode: String) {
+        val mode = mode + "/0"
         write { it.readMode = mode }
     }
 

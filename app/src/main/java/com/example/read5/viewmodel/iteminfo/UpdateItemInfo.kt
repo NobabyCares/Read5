@@ -41,14 +41,9 @@ class UpdateItemInfo @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val storeHouse = storeHouseRepository.searchById(id)
-                if (storeHouse != null) {  // ✅ 判空处理
                     val count = if(addOrSub) storeHouse.count + 1 else storeHouse.count - 1
                     GlobalSettings.setitemCount(count)
                     storeHouseRepository.updateByCount(id, count)
-                    Log.d(TAG, "updateByCount success: id=$id, count=$count")
-                } else {
-                    Log.e(TAG, "updateByCount failed: storeHouse not found for id=$id")
-                }
             } catch (e: Exception) {
                 Log.e(TAG, "updateByCount error", e)
             }

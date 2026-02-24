@@ -20,6 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+
+/*
+* 右边的滑动条
+*
+* */
 @Composable
 fun LazyGridScrollbar(
     gridState: LazyGridState,

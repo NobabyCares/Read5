@@ -36,13 +36,14 @@ import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.VirtualCanvas
 import com.example.read5.global.GlobalSettings
 import com.example.read5.singledata.DocumentHolder
-import com.example.read5.utils.comic.PixelTranslationIndex.searchByOffsetYPageIndex
+import com.example.read5.utils.comic.PixelTranslationIndex.indexConvertOffsetY
+import com.example.read5.utils.comic.PixelTranslationIndex.offsetYConvertIndex
 import com.example.read5.viewmodel.comic.ComicViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun HorizontalComicReader(navController: NavHostController) {
+fun HorizontalComicReader(navController: NavHostController, pixle: Int) {
     val itemInfo = DocumentHolder.requireItem()
     val context = LocalContext.current
     key(itemInfo.path) {
@@ -57,46 +58,61 @@ fun HorizontalComicReader(navController: NavHostController) {
                             or View.SYSTEM_UI_FLAG_FULLSCREEN
                             or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
         }
-        HorizontalComicCanvasContent(navController, itemInfo)
+        HorizontalComicCanvasContent(navController, itemInfo, pixle)
     }
 }
 
 @Composable
 private fun HorizontalComicCanvasContent(
     navController: NavHostController,
-    itemInfo: ItemInfo
+    itemInfo: ItemInfo,
+    pixle: Int
 ) {
     val TAG = "HorizontalComicCanvasContent"
     val context = LocalContext.current
     val comicViewModel: ComicViewModel = hiltViewModel()
-
-    //获取背景颜色
-    var backgroundColor by remember { mutableStateOf(GlobalSettings.getBackgroundColor()) }
     // 👈 用于启动协程
     val scope = rememberCoroutineScope()
-
+    //viewmodel信息获取
     var virtualCanvas by remember { mutableStateOf<VirtualCanvas?>(null) }
     val pageCache by comicViewModel.pageCache.collectAsState()
 
+    //UI控制显示
     var isLoading by remember { mutableStateOf(true) }
-    //数据库存储的数据
-    var currentPage by remember { mutableIntStateOf(0) }
     var isMenuVisible by remember { mutableStateOf(false) }
-    var panSmoothing by remember { mutableFloatStateOf(1f) }
 
+    //全局信息获取
+    var backgroundColor by remember { mutableStateOf(GlobalSettings.getBackgroundColor()) }
     // ✅ 缩放状态：和原文件一致
     var scale by remember { mutableFloatStateOf(GlobalSettings.getScale()) }
+    //对应缩放
+    var storagePanSmoothing by remember { mutableFloatStateOf(1f) }
 
 
+    //数据库存储的数据, 这里是对应下标
+    var storageCurrentIndex by remember { mutableIntStateOf(0 )}
 
     LaunchedEffect(Unit) {
         isLoading = true
         try {
             virtualCanvas = comicViewModel.initLoader(context, itemInfo)
+            Log.d(TAG, "initLoader: ${pixle}")
+            if(virtualCanvas != null){
+                storageCurrentIndex = if(pixle == 0){
+                    comicViewModel.preloadPages(itemInfo.currentPage.toFloat())
+                    offsetYConvertIndex(itemInfo.currentPage, canvas = virtualCanvas!!)
+                }else{
+                    comicViewModel.preloadPages(pixle.toFloat())
+                    offsetYConvertIndex(pixle, canvas = virtualCanvas!!)
+                }
+            }else{
+                Log.e(TAG, "initLoader: 获取失败")
+            }
         } finally {
             isLoading = false
         }
     }
+
 
     if (isLoading || virtualCanvas == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -105,24 +121,24 @@ private fun HorizontalComicCanvasContent(
         return
     }
 
+
+
+
     val canvas = virtualCanvas!!
     val totalPages = canvas.pageLayouts.size
-    // 将保存的 offsetY（Int）转换为页码 index
-    val initialPageIndex = searchByOffsetYPageIndex(itemInfo.currentPage, canvas)
 
-    val currentPageIndex by remember {
-        mutableIntStateOf(initialPageIndex)
-    }
 
     val pagerState = rememberPagerState(
-        initialPage = currentPageIndex.coerceIn(0, totalPages - 1),
+        initialPage = storageCurrentIndex.coerceIn(0, totalPages - 1),
         pageCount = { totalPages }
     )
+
+
 
     LaunchedEffect(pagerState.currentPage) {
         val current = pagerState.currentPage
         //这里一定要存储负数,因为在VirtualComicCanvas存储的是偏移量, 而偏移量始终为负数, 所以这里要取负数, 同意数据
-        currentPage = -1 * canvas.pageLayouts[current].top
+        storageCurrentIndex = -1 * canvas.pageLayouts[current].top
         val range = (current - 2)..(current + 2) // 预加载前后 2 页
         range.forEach { index ->
             if (index in 0 until totalPages) {
@@ -130,7 +146,7 @@ private fun HorizontalComicCanvasContent(
                 comicViewModel.onViewportSlide(index)
             }
         }
-        comicViewModel.updateCurrentPage(currentPage)
+        comicViewModel.updateCurrentPage(storageCurrentIndex)
     }
 
     LaunchedEffect(scale) {
@@ -138,19 +154,21 @@ private fun HorizontalComicCanvasContent(
         GlobalSettings.setScale(scale)
     }
 
-    // ⚡️ 关键：使用 DisposableEffect 处理退出时的保存
+    // ⚡️ 关键：使用 DisposableEffect 处理退出时的保存,用于保存历史记录并保证进度
     DisposableEffect(Unit) {
         // 这个块在组件首次加载时执行
         // 返回一个 onDispose 块，在组件销毁时执行
         onDispose {
             // 更新 ItemInfo
             val finalItemInfo = itemInfo.copy(
-                currentPage = currentPage
+                currentPage = storageCurrentIndex
             )
             // 添加到历史记录
             GlobalSettings.addToHistory(finalItemInfo)
         }
     }
+
+
 
     // 使用 Box 作为最外层容器，分离手势区域
     Box(
@@ -213,7 +231,19 @@ private fun HorizontalComicCanvasContent(
                         scope.launch {
                             pagerState.animateScrollToPage(targetPage)
                         }
+                    },
+                    toVerticalChangOffsetY = {
+                        val tempoOffsetY = indexConvertOffsetY(pagerState.currentPage, canvas)
+                        // 1. 弹出当前横屏页
+                        navController.popBackStack()
+
+                        // 2. 导航到竖屏页
+                        navController.navigate("vertical_comic_view/$tempoOffsetY")
+
+                        GlobalSettings.setReadMode("vertical_comic_view")
+                        Log.d(TAG, "Switching to vertical mode")
                     }
+
                 )
                 // 第二行：PanSmoothScreen 和 BackGroundColorScreen 平分空间
                 Row(
@@ -228,9 +258,9 @@ private fun HorizontalComicCanvasContent(
                         modifier = Modifier.weight(1f)  // 权重为1，平分空间
                     ) {
                         PanSmoothScreen(
-                            panSmoothing = panSmoothing,
+                            panSmoothing = storagePanSmoothing,
                             onPanSmoothing = {
-                                panSmoothing = it
+                                storagePanSmoothing = it
                                 Log.d("VerticalMenu", "Pan smoothing changed to: $it")
                             }
                         )

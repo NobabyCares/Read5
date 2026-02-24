@@ -51,19 +51,20 @@ import com.example.read5.viewmodel.comic.ComicViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun VerticalComicReader(navController: NavHostController) {
+fun VerticalComicReader(navController: NavHostController, pixle: Int) {
     val itemInfo = DocumentHolder.requireItem()
 
     // 关键：用 key 保证切换漫画时状态重置
     key(itemInfo.path) {
-        VirtualComicCanvasContent(navController, itemInfo)
+        VirtualComicCanvasContent(navController, itemInfo, pixle)
     }
 }
 
 @Composable
 private fun VirtualComicCanvasContent(
     navController: NavHostController,
-    itemInfo: ItemInfo
+    itemInfo: ItemInfo,
+    pixle: Int
 ) {
     val TAG = "VirtualComicCanvasContent"
     val context = LocalContext.current
@@ -75,8 +76,12 @@ private fun VirtualComicCanvasContent(
     var virtualCanvas by remember { mutableStateOf<VirtualCanvas?>(null) }
     val pageCache by comicViewModel.pageCache.collectAsState()
 
-    // ✅ 负值！
-    var offsetY by remember { mutableFloatStateOf(itemInfo.currentPage.toFloat()) }
+    var offsetY by remember {
+        mutableFloatStateOf(
+            (if (pixle == 0) itemInfo.currentPage else pixle).toFloat()
+        )
+    }
+
     var scale by remember { mutableFloatStateOf(GlobalSettings.getScale()) }
     var isMenuVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
@@ -89,6 +94,7 @@ private fun VirtualComicCanvasContent(
         isLoading = true
         try {
             virtualCanvas = comicViewModel.initLoader(context, itemInfo)
+            comicViewModel.preloadPages(offsetY)
         } finally {
             isLoading = false
         }
@@ -239,7 +245,7 @@ private fun VirtualComicCanvasContent(
                 .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
             Text(
-                text = "${PixelTranslationIndex.searchByOffsetYPageIndex(offsetY.toInt(),canvas)} / ${canvas.pageLayouts.size}",
+                text = "${PixelTranslationIndex.offsetYConvertIndex(offsetY.toInt(),canvas)} / ${canvas.pageLayouts.size}",
                 color = Color.White,
                 fontSize = 14.sp
             )
@@ -261,6 +267,15 @@ private fun VirtualComicCanvasContent(
                         val targetOffsetY = -(canvas.totalHeight * newProgress.coerceIn(0f, 1f))
                         offsetY = targetOffsetY
                         comicViewModel.onViewportScrolled(offsetY, currentCanvasHeight)
+                    },
+                    onOffsetYChange = {
+                        Log.d(TAG, "📱 切换到横屏")
+                        // 1. 弹出当前横屏页
+                        navController.popBackStack()
+                        // 2. 导航到竖屏页
+                        navController.navigate("horizon_comic_view/${offsetY.toInt()}")
+
+                        GlobalSettings.setReadMode("horizon_comic_view")
                     },
                     modifier = Modifier
                         .fillMaxWidth()

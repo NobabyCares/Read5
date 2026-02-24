@@ -37,7 +37,10 @@ import androidx.compose.ui.unit.sp
 import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 
-
+/*
+* 排序条
+*
+* */
 @Composable
 fun SortBarScreen(
     modifier: Modifier = Modifier,

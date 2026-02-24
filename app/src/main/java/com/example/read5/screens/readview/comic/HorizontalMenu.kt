@@ -38,10 +38,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.read5.bean.VirtualCanvas
 import com.example.read5.global.GlobalSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,6 +53,7 @@ fun HorizontalMenu(
     readingProgress: Float,
     onProgressChanged: (Float) -> Unit = {},
     modifier: Modifier = Modifier,
+    toVerticalChangOffsetY: () -> Unit
 ) {
     val TAG = "HorizontalMenu"
     Box(
@@ -63,7 +66,8 @@ fun HorizontalMenu(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            SimpleProgressBar(progress = readingProgress, onProgressChange = onProgressChanged)
+            SimpleProgressBar(progress = readingProgress,
+                onProgressChange = onProgressChanged)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -77,14 +81,7 @@ fun HorizontalMenu(
                 // 3. 竖屏阅读按钮
                 Button(
                     onClick = {
-                        navController.navigate("vertical_comic_view") {
-                            popUpTo("horizon_comic_view") {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
-                        GlobalSettings.setReadMode("vertical_comic_view")
-                        Log.d(TAG, "Switching to vertical mode")
+                        toVerticalChangOffsetY()
                     },
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))

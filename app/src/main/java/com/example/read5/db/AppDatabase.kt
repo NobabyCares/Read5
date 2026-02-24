@@ -7,9 +7,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.read5.bean.ComicType
 import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
 import com.example.read5.bean.Tag
+import com.example.read5.dao.ComicTypeDao
 import com.example.read5.dao.ItemInfoDao
 import com.example.read5.dao.StoreHouseDao
 import com.example.read5.dao.TagDao
@@ -23,7 +25,7 @@ import kotlinx.coroutines.launch
         StoreHouse::class,
         ItemInfo::class,
         Tag::class,
-               ], // 👈 告诉 Room 有哪些表
+        ComicType::class     ], // 👈 告诉 Room 有哪些表
     version = 1,                    // 初始版本
     exportSchema = false            // 开发阶段可关掉 schema 导出
 )
@@ -33,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun storeHouseDao(): StoreHouseDao
     abstract fun itemInfoDao(): ItemInfoDao
     abstract fun tagDao(): TagDao
+    abstract fun comicTypeDao(): ComicTypeDao
 
     companion object {
         @Volatile

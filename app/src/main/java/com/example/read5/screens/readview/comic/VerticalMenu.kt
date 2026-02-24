@@ -54,6 +54,7 @@ fun VerticalMenu(
     modifier: Modifier = Modifier,
     readingProgress: Float,
     onProgressChanged: (Float) -> Unit = {},
+    onOffsetYChange: () -> Unit = {},
 ) {
     val TAG = "VerticalMenu"
 
@@ -62,7 +63,10 @@ fun VerticalMenu(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
-            .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .background(
+                Color.Black.copy(alpha = 0.85f),
+                RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            )
             .padding(horizontal = 12.dp, vertical = 8.dp)
             // ✅ 添加日志查看触摸事件
             .pointerInput(Unit) {
@@ -118,14 +122,9 @@ fun VerticalMenu(
                 // 3. 横屏阅读按钮
                 Button(
                     onClick = {
-                        Log.d(TAG, "📱 切换到横屏")
-                        navController.navigate("horizon_comic_view") {
-                            popUpTo("vertical_comic_view") {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
-                        GlobalSettings.setReadMode("horizon_comic_view")
+
+                        onOffsetYChange()
+
                     },
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))

@@ -37,7 +37,7 @@ data class ItemInfo(
     var androidId: String = DeviceIdentification.androidId,
     //    总页数
     var totalPage: Int = 0,
-    //    阅读的页数
+    //    上次阅读的位置
     var currentPage: Int = 0,
     // 如果为false 就是默认渲染第一页,如果为true, 就在应用文件夹cover选择名为"id.jpg"的图片
     var cover: Boolean =false,
@@ -53,8 +53,10 @@ data class ItemInfo(
     var isShow:Boolean = true,
     //    hash
     var hash: String = "",
-    //    分类
+    //    分类,属于那个仓库
     var category: Long,
+    //属于那种类型,这里我是想要用于分类连续的书籍, 比如进击巨人的漫画集中在一起
+    var comicType: Int = -1,
     //    是否收藏
     var isCollect: Boolean = false,
     //    文件大小

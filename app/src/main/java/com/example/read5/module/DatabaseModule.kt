@@ -1,11 +1,14 @@
 package com.example.read5.module
 
 import android.content.Context
+import com.example.read5.dao.ComicTypeDao
 import com.example.read5.dao.ItemInfoDao
 import com.example.read5.dao.StoreHouseDao
 import com.example.read5.db.AppDatabase
 import com.example.read5.repository.StoreHouseRepository
 import com.example.read5.repository.StoreHouseRepositoryImpl
+import com.example.read5.repository.comictype.ComicTypeRepository
+import com.example.read5.repository.comictype.ComicTypeRepositoryApi
 import com.example.read5.repository.iteminfo.ItemInfoRepository
 import com.example.read5.repository.iteminfo.ItemInfoRepositoryImpl
 import dagger.Binds
@@ -48,6 +51,19 @@ object DatabaseModule{
     @Singleton
     fun provideItemInfoRepository(itemInfoDao: ItemInfoDao): ItemInfoRepository {
         return ItemInfoRepositoryImpl(itemInfoDao)
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideComicTypeDao(database: AppDatabase): ComicTypeDao {
+        return database.comicTypeDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideComicTypeRepository(comicTypeDao: ComicTypeDao): ComicTypeRepositoryApi {
+        return ComicTypeRepository(comicTypeDao)
     }
 
 }

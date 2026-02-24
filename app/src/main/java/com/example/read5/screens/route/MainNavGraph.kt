@@ -82,12 +82,24 @@ fun MainNavGraph(
             SettingsScreen()
         }
         //竖屏阅读
-        composable("vertical_comic_view") {
-            VerticalComicReader(navController)
+        composable(route = "vertical_comic_view/{offsetY}",
+            arguments = listOf(
+                navArgument("offsetY") {
+                    defaultValue = 0
+                }
+            )) {backStackEntry ->
+            val offsetY = backStackEntry.arguments?.getInt("offsetY") ?: 0
+            VerticalComicReader(navController, offsetY)
         }
         //横屏阅读
-        composable("horizon_comic_view") {
-            HorizontalComicReader(navController = navController)
+        composable(route = "horizon_comic_view/{offsetY}",
+            arguments = listOf(
+                navArgument("offsetY") {
+                    defaultValue = 0
+                }
+            )) {backStackEntry ->
+            val offsetY = backStackEntry.arguments?.getInt("offsetY") ?: 0
+            HorizontalComicReader(navController = navController, offsetY)
         }
 
         //横屏阅读

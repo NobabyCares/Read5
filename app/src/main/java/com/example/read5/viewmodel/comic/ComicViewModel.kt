@@ -52,6 +52,7 @@ class ComicViewModel @Inject constructor(
     val pageCache: StateFlow<Map<Int, ImageBitmap>> = _pageCache
     //这里是
     private val _viewportEvents = MutableSharedFlow<ViewportEvent>(replay = 0, extraBufferCapacity = 5)
+
     //    key,用于数据库更新，因为数据库是联合主键
     var key: ItemKey? = null
     // 新增：用于控制延迟保存的 Job
@@ -114,12 +115,8 @@ class ComicViewModel @Inject constructor(
         val sortedPages = loadFile?.loadComic()?: return null
         //获取到漫画加载器,是zip还是文件夹
         loadComicLoader(context, path, sortedPages)
-        //加载虚拟画布
+        //创建虚拟画布
         virtualCanvas = BuilderVirtualCanvas.builderVirtualCanvas(sortedPages)
-        // ✅ 立即预加载第一页及下一页
-        viewModelScope.launch(Dispatchers.IO) {
-            preloadPages(itemInfo.currentPage.toFloat())
-        }
         // 👇 激活 saveJob
         scheduleAutoSave()
         return virtualCanvas
@@ -137,13 +134,13 @@ class ComicViewModel @Inject constructor(
 
 
     // 新增函数：预加载附近页面
-    private fun preloadPages(currentOffsetY: Float, viewportHeight: Int = 2000) {
+     fun preloadPages(currentOffsetY: Float, viewportHeight: Int = 2000) {
         val canvas = virtualCanvas ?: return // 👈 安全退出
         val totalPages = canvas.pageLayouts.size
 
         // ✅ 1. 使用真实的屏幕高度（应从 UI 传入，或通过其他方式获取）
         val screenHeight = viewportHeight // 这里应该是一个参数，比如从 Composable 传入
-
+        //存储的是负数,所以转换一下啊
         val visibleTop = -currentOffsetY.toInt()
         val visibleBottom = visibleTop + screenHeight
 
