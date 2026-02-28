@@ -22,6 +22,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -31,7 +35,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.read5.R // 如果你有图标资源，可替换；否则用默认图标
 import com.example.read5.bean.Feature
+import com.example.read5.bean.ItemInfo
 import com.example.read5.screens.auth.PasssWordSettingsScreen
+import com.example.read5.screens.editdialog.ManagerEditDialog
 import com.example.read5.viewmodel.iteminfo.MyViewOfItemInfoViewModel
 
 
@@ -46,13 +52,19 @@ fun MyViewScreen(
     val myViewOfItemInfoViewModel: MyViewOfItemInfoViewModel = hiltViewModel()
 
 
+
+
     when(displayMode){
         "home" -> {
             HomeScreen(navHostController, myViewOfItemInfoViewModel)
         }
         "item_not_show" -> {
             myViewOfItemInfoViewModel.searchByIsShow()
-            ShowScreen(navHostController, myViewOfItemInfoViewModel)
+            ShowScreen(
+                navHostController,
+
+                myViewOfItemInfoViewModel
+            )
         }
         "is_collect_item" -> {
             myViewOfItemInfoViewModel.searchByIsCollect()
@@ -65,5 +77,7 @@ fun MyViewScreen(
             PasssWordSettingsScreen()
         }
     }
+
+
 
 }

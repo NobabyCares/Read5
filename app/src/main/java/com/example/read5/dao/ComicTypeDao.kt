@@ -33,6 +33,14 @@ interface ComicTypeDao {
     @Query("SELECT * FROM comic_type_table ORDER BY name")
       fun getAllTypesFlow(): Flow<List<ComicType>>  // 👈 不是 suspend，返回 Flow！
 
+    // ✅ 新增：删除指定的关联
+    @Query("DELETE FROM item_comic_type_cross_ref WHERE itemId = :itemId AND typeId IN (:typeIds)")
+    suspend fun deleteItemFromTypes(itemId: Long, typeIds: List<Int>)
+
+    // ✅ 新增：删除某个 item 的所有关联
+    @Query("DELETE FROM item_comic_type_cross_ref WHERE itemId = :itemId")
+    suspend fun deleteAllItemTypes(itemId: Long)
+
     // ─── 查询：根据 Item ID 获取完整信息 + 分类 ──
     @Transaction
     @Query("SELECT * FROM item_info_table WHERE id = :itemId")

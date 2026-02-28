@@ -13,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -25,6 +26,12 @@ class ComicTypeSearchViewModel @Inject constructor(
 
     val TAG = "ComicTypeSearchViewModel"
 
+    // ✅ 保存显示状态
+    private val _isShowItemInfo = MutableStateFlow(false)
+    val isShowItemInfo: StateFlow<Boolean> = _isShowItemInfo.asStateFlow()
+    // ✅ 保存当前选中的 typeId
+    private val _currentTypeId = MutableStateFlow<Int?>(null)
+    val currentTypeId: StateFlow<Int?> = _currentTypeId.asStateFlow()
 
     // 直接暴露 StateFlow
     val allTypes: StateFlow<List<ComicType>> = repository
@@ -35,8 +42,7 @@ class ComicTypeSearchViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    // 1. 创建一个 MutableStateFlow 来持有当前选中的 typeId
-    private val _currentTypeId = MutableStateFlow<Int?>(null)
+
 
     // 2. 创建一个 StateFlow 来暴露 ItemWithTypes 列表
     // 初始值为空列表
@@ -76,13 +82,20 @@ class ComicTypeSearchViewModel @Inject constructor(
         }
     }
 
-    fun insertItemToTypes(itemId: Long, typeIds: List<Int>) {
+    // ✅ 新增：更新方法（先删除再插入）
+    fun updateItemTypes(itemId: Long, newTypeIds: List<Int>) {
         viewModelScope.launch {
             try {
-                repository.insertItemToTypes(itemId, typeIds)
-                // 可选：插入成功后刷新列表（如果 getAll 是 Flow，会自动更新）
+                Log.d(TAG, "Updating item $itemId with types: $newTypeIds")
+                repository.updateItemTypes(itemId, newTypeIds)
+                Log.d(TAG, "Update successful")
+
+                // 刷新当前分类的书籍列表
+                _currentTypeId.value?.let { typeId ->
+                    loadItemsForType(typeId)
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "插入失败：${e.message}")
+                Log.e(TAG, "更新失败", e)
             }
         }
     }
@@ -138,6 +151,28 @@ class ComicTypeSearchViewModel @Inject constructor(
         }
     }
 
+
+
+    // ✅ 进入分类
+    fun enterType(typeId: Int) {
+        _currentTypeId.value = typeId
+        _isShowItemInfo.value = true
+    }
+
+    // ✅ 返回分类列表
+    fun backToTypes() {
+        _isShowItemInfo.value = false
+        // 注意：不清除 _currentTypeId，保留它以便返回时直接使用
+    }
+
+
+    fun changeShowItemInfo(show: Boolean) {
+        _isShowItemInfo.value = show
+        if (!show) {
+            // 如果返回分类列表，清除 typeId 以节省资源
+            _currentTypeId.value = null
+        }
+    }
 
 
 

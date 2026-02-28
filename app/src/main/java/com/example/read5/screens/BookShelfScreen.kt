@@ -41,11 +41,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.read5.bean.ItemInfo
 import com.example.read5.bean.StoreHouse
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.bottombar.BottomBarScreen
 import com.example.read5.screens.comictype.ComicTypeContentScreen
 import com.example.read5.screens.comictype.ComicTypeItemScreen
+import com.example.read5.screens.editdialog.ManagerEditDialog
 import com.example.read5.screens.iteminfo.ItemInfoContentScreen
 import com.example.read5.screens.iteminfo.ItemInfoScreen
 import com.example.read5.screens.miniweight.LazyGridScrollbar
@@ -94,6 +96,7 @@ fun BookShelfScreen(
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
+
     // 收集搜索 ViewModel 的数据
     val searchResults by searchComicTypeAndItemInfo.results.collectAsStateWithLifecycle()
     val isLoading by searchComicTypeAndItemInfo.isLoading.collectAsStateWithLifecycle()
@@ -103,11 +106,7 @@ fun BookShelfScreen(
     // 如果是 "comicType" 页面，默认搜分类；否则默认搜书籍
     val targetMode = if (displayMode == "comicType") SearchMode.COMIC_TYPE else SearchMode.ITEMS
 
-    // 拦截返回键
-    BackHandler(enabled = isSearching) {
-        isSearching = false
-        searchQuery = ""
-    }
+
 
     // --- 监听输入，触发搜索 ---
     LaunchedEffect(searchQuery, targetMode) {

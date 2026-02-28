@@ -55,8 +55,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ComicTypeItemScreen(
     comicTypeItem: ComicType,
-    modifier: Modifier = Modifier,
     onChangeComicType: () -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     val TAG = "ComicTypeItemScreen"
     //封面生成

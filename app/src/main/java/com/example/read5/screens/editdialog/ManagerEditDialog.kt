@@ -26,13 +26,6 @@ fun ManagerEditDialog(
     item: ItemInfo,
     onDismiss: () -> Unit
 ) {
-    val comicTypes = remember {
-        mutableStateListOf(
-            "热血", "搞笑", "恋爱", "奇幻", "科幻",
-            "悬疑", "恐怖", "日常", "励志", "战斗"
-        )
-    }
-
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,

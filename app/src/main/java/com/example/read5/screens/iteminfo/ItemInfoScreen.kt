@@ -58,6 +58,7 @@ import java.time.format.DateTimeFormatter
 fun ItemInfoScreen(
     item: ItemInfo,
     onToView: () -> Unit,
+    onLongPress: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val TAG = "SlideDebug"
@@ -65,8 +66,6 @@ fun ItemInfoScreen(
     val coverExtractorViewModel: CoverExtractorViewModel = hiltViewModel()
     val updateItemInfo: UpdateItemInfo = hiltViewModel()
 
-    //UI控制
-    var isShowMoreInfoDialg by remember { mutableStateOf(true) }
     // ✅ 局部状态，用于 UI 立即响应
     var localIsCollect by remember(item.id) {
         mutableStateOf(item.isCollect)
@@ -106,7 +105,7 @@ fun ItemInfoScreen(
                     },
                     onLongPress = {
                         Log.d(TAG, "Column onLongPress triggered for item ${item.id}")
-                        isShowMoreInfoDialg = false
+                        onLongPress()
                     },
                     onDoubleTap = {
                         // 可选：双击支持
@@ -241,13 +240,7 @@ fun ItemInfoScreen(
         }
     }
 
-    if(!isShowMoreInfoDialg){
-        Log.d(TAG, "Showing ManagerEditDialog for item ${item.id}")
-       ManagerEditDialog(item) {
-           Log.d(TAG, "ManagerEditDialog dismissed for item ${item.id}")
-           isShowMoreInfoDialg = true
-       }
-    }
+
 }
 
 //转化文件大小

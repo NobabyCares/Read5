@@ -1,21 +1,18 @@
 package com.example.read5.screens.comictype
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -24,38 +21,39 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.example.read5.bean.ComicType
+import com.example.read5.bean.ItemInfo
 import com.example.read5.global.GlobalSettings
+import com.example.read5.screens.editdialog.ManagerEditDialog
 import com.example.read5.screens.iteminfo.ItemInfoScreen
 import com.example.read5.singledata.DocumentHolder
 import com.example.read5.viewmodel.comictype.ComicTypeSearchViewModel
 
 @Composable
-fun ComicTypeContentScreen(navHostController: NavHostController){
-
+fun ComicTypeContentScreen(navHostController: NavHostController) {
     val TAG = "ComicTypeContentScreen"
     val comicTypeSearchViewModel: ComicTypeSearchViewModel = hiltViewModel()
 
-    //DATA
+    // 从 ViewModel 获取状态
     val comicTypeItems by comicTypeSearchViewModel.allTypes.collectAsStateWithLifecycle()
-    // 1. 监听数据变化
     val itemsWithTypes by comicTypeSearchViewModel.itemsByType.collectAsStateWithLifecycle()
+    val isShowItemInfo by comicTypeSearchViewModel.isShowItemInfo.collectAsStateWithLifecycle()
+    val currentTypeId by comicTypeSearchViewModel.currentTypeId.collectAsStateWithLifecycle()
 
-    //UI
-    //加载数据
-    var isShowItemInfo by remember { mutableStateOf(false) }
-    //id
-    var typeId by remember { mutableIntStateOf(0) }
+    // 对话框状态
+    var showManagerDialog by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf<ItemInfo?>(null) }
 
-    // 2. 当 typeId 变化时，通知 ViewModel 加载数据
-    LaunchedEffect(typeId) {
-        comicTypeSearchViewModel.loadItemsForType(typeId)
+    // ✅ 当有 currentTypeId 时，确保加载数据
+    LaunchedEffect(currentTypeId) {
+        currentTypeId?.let { typeId ->
+            // 这里不需要额外操作，因为 itemsByType 已经通过 flatMapLatest 自动加载
+            Log.d(TAG, "Current type ID: $typeId")
+        }
     }
 
-    // ✅ 核心：拦截返回键
+    // 处理返回键
     BackHandler(enabled = isShowItemInfo) {
-        // 如果正在显示详情，按下返回键只关闭详情，不退出页面
-        isShowItemInfo = false
+        comicTypeSearchViewModel.backToTypes()
     }
 
     Column(
@@ -70,30 +68,47 @@ fun ComicTypeContentScreen(navHostController: NavHostController){
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if(isShowItemInfo){
-                items(itemsWithTypes) { itemWrapper  ->
-                    ItemInfoScreen( item = itemWrapper.item, onToView = {
-                        DocumentHolder.setCurrentItem(itemWrapper.item)
-                        val readMode = GlobalSettings.getReadMode()
-                        navHostController.navigate(readMode) {
-                            launchSingleTop = true
+            if (isShowItemInfo) {
+                // ✅ 显示分类下的书籍
+                items(itemsWithTypes) { itemWrapper ->
+                    ItemInfoScreen(
+                        item = itemWrapper.item,
+                        onToView = {
+                            DocumentHolder.setCurrentItem(itemWrapper.item)
+                            val readMode = GlobalSettings.getReadMode()
+                            navHostController.navigate(readMode) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onLongPress = {
+                            Log.d(TAG, "Long press on item ${itemWrapper.item.id}")
+                            selectedItem = itemWrapper.item
+                            showManagerDialog = true
                         }
-                    })
+                    )
                 }
-            }else{
-                items(comicTypeItems) { index ->
-                    ComicTypeItemScreen(comicTypeItem = index){
-                        isShowItemInfo = true
-                        typeId = index.id
-                    }
+            } else {
+                // ✅ 显示分类列表
+                items(comicTypeItems) { type ->
+                    ComicTypeItemScreen(
+                        comicTypeItem = type,
+                        onChangeComicType = {
+                            comicTypeSearchViewModel.enterType(type.id)  // ✅ 使用 enterType
+                        }
+                    )
                 }
             }
         }
+    }
 
+    // 显示编辑对话框
+    if (showManagerDialog && selectedItem != null) {
+        ManagerEditDialog(
+            item = selectedItem!!,
+            onDismiss = {
+                showManagerDialog = false
+                selectedItem = null
+            }
+        )
     }
 }
-
-
-
-
-

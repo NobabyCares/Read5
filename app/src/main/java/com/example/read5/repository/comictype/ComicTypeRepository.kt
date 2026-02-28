@@ -11,6 +11,12 @@ import javax.inject.Inject
 
 
 interface  ComicTypeRepositoryApi{
+    // ✅ 新增：更新 item 的分类（先删除再插入）
+    suspend fun updateItemTypes(itemId: Long, newTypeIds: List<Int>)
+
+    // ✅ 新增：删除指定关联
+    suspend fun deleteItemFromTypes(itemId: Long, typeIds: List<Int>)
+
     suspend fun updateComicTypeName(id: Int, name: String)
 
     suspend fun updateComicTypeCover(ids: List<Int>, cover: String)
@@ -35,6 +41,35 @@ interface  ComicTypeRepositoryApi{
 class ComicTypeRepository @Inject constructor(
     private val comicTypeDao: ComicTypeDao
 ): ComicTypeRepositoryApi {
+    // ✅ 新增：删除指定关联
+    override suspend fun deleteItemFromTypes(itemId: Long, typeIds: List<Int>) {
+        if (typeIds.isEmpty()) return
+        comicTypeDao.deleteItemFromTypes(itemId, typeIds)
+    }
+
+    // ✅ 新增：更新 item 的分类（核心方法）
+    override suspend fun updateItemTypes(itemId: Long, newTypeIds: List<Int>) {
+        // 1. 获取当前关联
+        val currentTypeIds = comicTypeDao.getTypeIdByItemId(itemId)
+
+        // 2. 找出需要删除和需要添加的
+        val toDelete = currentTypeIds.filter { it !in newTypeIds }
+        val toAdd = newTypeIds.filter { it !in currentTypeIds }
+
+        // 3. 执行删除
+        if (toDelete.isNotEmpty()) {
+            comicTypeDao.deleteItemFromTypes(itemId, toDelete)
+        }
+
+        // 4. 执行添加
+        if (toAdd.isNotEmpty()) {
+            val crossRefs = toAdd.map { typeId ->
+                ItemComicTypeCrossRef(itemId = itemId, typeId = typeId)
+            }
+            comicTypeDao.insertCrossRefs(crossRefs)
+        }
+    }
+
     override suspend fun updateComicTypeName(id: Int, name: String) {
         comicTypeDao.updateComicTypeName(id, name)
     }

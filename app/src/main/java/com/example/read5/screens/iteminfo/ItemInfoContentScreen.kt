@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.example.read5.bean.ItemInfo
 import com.example.read5.global.GlobalSettings
+import com.example.read5.screens.editdialog.ManagerEditDialog
 import com.example.read5.screens.miniweight.LazyGridScrollbar
 import com.example.read5.screens.miniweight.ScrollToTopButton
 import com.example.read5.screens.sortbar.SortBarScreen
@@ -52,13 +54,10 @@ fun ItemInfoContentScreen(
     //副作用
     val coroutineScope = rememberCoroutineScope()
 
-
-
     //DATA
     // ✅ 1. 收集 PagingData
     // collectAsLazyPagingItems() 会自动处理 StateFlow<PagingData>
     val itemInfos = bookShelfOfItemInfoViewModel.items.collectAsLazyPagingItems()
-//    val itemInfos = bookShelfOfItemInfoViewModel.items.collectAsLazyPagingItems()
 
     //global数据
     //排序
@@ -67,7 +66,9 @@ fun ItemInfoContentScreen(
 
     Log.d(TAG, "ItemInfoContentScreen - currentSortType: ${currentSortType.label} ascOrDesc: ${ascOrDesc}")
 
-
+    // ✅ 对话框状态
+    var showManagerDialog by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf<ItemInfo?>(null) }
 
     //UI
     //记录LazyVerticalGrid滑动的位置
@@ -133,11 +134,16 @@ fun ItemInfoContentScreen(
                         ItemInfoScreen(
                             it,
                             onToView = {
-                            DocumentHolder.setCurrentItem(it)
-                            navHostController.navigate(readMode) {
-                                launchSingleTop = true
-                                 }
+                                DocumentHolder.setCurrentItem(it)
+                                navHostController.navigate(readMode) {
+                                    launchSingleTop = true
+                                }
                             },
+                            onLongPress = {
+                                Log.d(TAG, "Long press on item ${it.id}")
+                                selectedItem = it
+                                showManagerDialog = true
+                            }
                         )
                     }
                 }
@@ -179,6 +185,17 @@ fun ItemInfoContentScreen(
                     .padding(bottom = 80.dp, end = 16.dp)  // 增加底部padding，让按钮在SortBar上方
             )
         }
+    }
+
+    // ✅ 在顶层显示对话框
+    if (showManagerDialog && selectedItem != null) {
+        ManagerEditDialog(
+            item = selectedItem!!,
+            onDismiss = {
+                showManagerDialog = false
+                selectedItem = null
+            }
+        )
     }
 
 }
