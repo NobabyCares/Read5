@@ -16,7 +16,7 @@ sealed class TopBarOption(
     object Home : TopBarOption("首页", 1)
     object History : TopBarOption("历史记录", 2)
     object BookDesk : TopBarOption("书架", 3)
-    object comicType : TopBarOption("分类", 3)
+    object ComicType : TopBarOption("分类", 4)
 
 
     companion object {
@@ -25,10 +25,10 @@ sealed class TopBarOption(
         // ✅ 修复点 2: 使用 lazy
         val all: List<TopBarOption> by lazy {
             listOf(
-               Home,
-               History,
-               BookDesk,
-            comicType
+                Home,
+                History,
+                BookDesk,
+                ComicType
             )
         }
     }

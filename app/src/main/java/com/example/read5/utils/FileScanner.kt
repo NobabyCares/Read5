@@ -56,12 +56,12 @@ object FileScanner {
                 }
             }else{
                 if(isFileExtension(current.name, extensions)){
-//                    val hash = calculateContentBasedHash(current)
+                    val hash = calculateContentBasedHash(current)
                     val itemInfo = ItemInfo(
                         name = current.name,
                         baseCode = Base64.getEncoder().encodeToString(current.name.toByteArray()),
                         path = current.absolutePath,
-                        hash = "",
+                        hash = hash,
                         androidId = DeviceIdentification.androidId,
                         createTime = current.lastModified(),
                         fileSize = current.length(),
@@ -148,12 +148,12 @@ fun findComicBooksByFolder(path: String, category: Long): List<ItemInfo>{
 
         // 判定：必须有图片，且没有非图片文件
         if (hasImage && !nonImageFileFound) {
-//            val hash = calculateContentBasedHash(firstImageFile)
+            val hash = calculateContentBasedHash(firstImageFile)
             return  ItemInfo(
                 name = folder.name,
                 baseCode = Base64.getEncoder().encodeToString(folder.name.toByteArray()),
                 path = folder.absolutePath,
-                hash = "",
+                hash = hash,
                 androidId = DeviceIdentification.androidId,
                 createTime = folder.lastModified(),
                 fileSize = folder.length(),

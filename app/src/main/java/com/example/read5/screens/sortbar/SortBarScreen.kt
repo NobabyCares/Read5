@@ -1,5 +1,6 @@
 package com.example.read5.screens.sortbar
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,9 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /*
@@ -48,7 +49,15 @@ fun SortBarScreen(
     isAscending: Boolean,               // 当前排序方向（true=升序，false=降序）
     onSortChanged: (SortOption, Boolean) -> Unit, // 字段或方向变化时回调
 ) {
+    val TAG = "SlideDebug"
+
     var expanded by remember { mutableStateOf(false) }
+
+    // 记录重组
+    Log.d(TAG, "SortBarScreen Recomposition! Current Sort: ${currentSortType.label}, Asc: $isAscending")
+
+    // 👇 添加日志：每次重组都会打印
+    Log.d(TAG, "Recomposition! Current Sort: ${currentSortType.label}, Asc: $isAscending")
 
     // 生成按钮文字：字段标签 + 方向箭头
     val buttonLabel = buildString {
@@ -58,8 +67,14 @@ fun SortBarScreen(
 
     Box(modifier = modifier.fillMaxWidth()) {
         Button(
-            onClick = { expanded = true },
+            onClick = {
+                Log.d(TAG, "Sort button clicked, expanding dropdown")
+                expanded = true
+            },
             modifier = Modifier.fillMaxWidth()
+                .onSizeChanged { size ->
+                    Log.d(TAG, "SortBar Size Changed: Width=${size.width}, Height=${size.height}")
+                }
         ) {
             Text(
                 text = "排序: $buttonLabel",
@@ -69,7 +84,9 @@ fun SortBarScreen(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
+            onDismissRequest = {
+                Log.d(TAG, "Dropdown dismissed")
+                expanded = false },
             modifier = Modifier.fillMaxWidth()
         ) {
             SortOption.all.forEach { option ->
@@ -92,11 +109,16 @@ fun SortBarScreen(
                         }
                     },
                     onClick = {
+                        Log.d(TAG, "Dropdown item clicked: ${option.label}, currentType: ${currentSortType.label}")
                         expanded = false
                         if (option == currentSortType) {
                             // 同一字段：切换方向
+                            Log.d(TAG, "Same field, toggling direction: current=$isAscending -> new=${!isAscending}")
+                            // 同一字段：切换方向
                             onSortChanged(option, !isAscending)
                         } else {
+                            // 不同字段：默认使用升序
+                            Log.d(TAG, "Different field, setting to ascending")
                             // 不同字段：默认使用升序（可根据需要改为上次记忆的方向）
                             onSortChanged(option, true)
                         }

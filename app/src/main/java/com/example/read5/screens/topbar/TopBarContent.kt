@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.storehouse.StoreHouseInputDialog
-import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
 /*
@@ -26,7 +25,10 @@ import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 @Composable
 fun TopBarContent(
     navController: NavController,
-    searchItemInfo: SearchItemInfo,
+    // ✅ 新增：搜索相关状态和回调
+    onIsSearchingChange: (Boolean) -> Unit,
+    onQueryChange: (String) -> Unit, // 输入框文字变化
+    modifier: Modifier = Modifier
 ) {
 
     val TAG = "TopBarContent"
@@ -42,8 +44,7 @@ fun TopBarContent(
     // 👇 新增：拦截返回键
     BackHandler(enabled = isSearchExpanded) {
         isSearchExpanded = false
-        // 直接返回上一个页面，因为上一个页面就是当前页面的上一个状态
-        navController.popBackStack()
+        onIsSearchingChange(false)
     }
 
     Row(
@@ -53,23 +54,12 @@ fun TopBarContent(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if(isSearchExpanded){
-
-            // 搜索框 + 背景遮罩（可选）
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                SearchBarScreen(
-                    searchItemInfo = searchItemInfo,
-                    onDismiss = {
-                        // 退出搜索模式
-                        isSearchExpanded = false
-                        // 恢复默认分类（可选）
-                        searchItemInfo.searchByCategory(GlobalSettings.getRecentStoreHouse())
-                    }
-                )
-            }
+            onIsSearchingChange(true)
+            // ✅ 模式 A：显示搜索栏 (直接嵌入 SearchBarScreen)
+            SearchBarScreen(
+                onQueryChange = onQueryChange,
+                modifier = modifier
+            )
         }else{
             // 左侧标签
             // 当前选中的 tab 索引（可选，用于高亮）

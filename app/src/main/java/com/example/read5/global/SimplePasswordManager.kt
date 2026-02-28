@@ -10,7 +10,7 @@ import java.io.File
 object SimplePasswordManager {
 
     private const val CONFIG_FILE_NAME = "app_config.json"
-    private const val DEFAULT_PASSWORD = "123"
+    private const val DEFAULT_PASSWORD = "111"
     private val json = Json { prettyPrint = true }
 
     @Serializable

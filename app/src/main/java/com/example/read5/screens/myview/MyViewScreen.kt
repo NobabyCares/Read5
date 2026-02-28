@@ -31,55 +31,39 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.read5.R // 如果你有图标资源，可替换；否则用默认图标
 import com.example.read5.bean.Feature
-import com.example.read5.viewmodel.iteminfo.SearchItemInfo
+import com.example.read5.screens.auth.PasssWordSettingsScreen
+import com.example.read5.viewmodel.iteminfo.MyViewOfItemInfoViewModel
 
 
 @Composable
 fun MyViewScreen(
     navHostController: NavHostController,
-    searchItemInfo: SearchItemInfo,
+    displayMode: String = "",
     modifier: Modifier = Modifier,
 ) {
-    // ✅ 配置式声明所有功能（清晰、易读、易改）
-    val features = listOf(
-        Feature(1,  "隐藏内容", Icons.Default.Home, FeatureAction.ShowHiddenItems),
-        Feature(2,  "收藏夹", Icons.Default.Star, FeatureAction.ShowIsCollectItems),
-        Feature(3,"设置密码", Icons.Default.Star, FeatureAction.SimplePassword),
-        Feature(4, "数据库查询", Icons.Default.Star, FeatureAction.NavigateTo("all_data_search")),
-        //供参考
-        /*Feature("history", "阅读历史", Icons.Default.Home, FeatureAction.NavigateTo("reading_history")),
-        Feature("tags", "标签管理", Icons.Default.Home, FeatureAction.NavigateTo("tags")),
-        Feature("settings", "设置", Icons.Default.Settings, FeatureAction.OpenSettings),*/
-    )
 
-    // 统一处理点击
-    fun handleFeatureClick(action: FeatureAction) {
-        when (action) {
-            is FeatureAction.ShowHiddenItems -> {
-                searchItemInfo.searchByIsShow() // 触发数据加载
-                navHostController.navigate("item_not_show")
-            }
-            is FeatureAction.ShowIsCollectItems -> {
-                searchItemInfo.searchByIsCollect() // 触发数据加载
-                navHostController.navigate("item_not_show")
-            }
-            is FeatureAction.SimplePassword -> {
-                navHostController.navigate("simple_password")
-            }
-            is FeatureAction.NavigateTo -> {
-                navHostController.navigate(action.route)
-            }
-            is FeatureAction.OpenSettings -> {
-                navHostController.navigate("settings")
-            }
-                // TODO: 打开设置
+    val TAG = "MyViewScreen"
+    val myViewOfItemInfoViewModel: MyViewOfItemInfoViewModel = hiltViewModel()
 
+
+    when(displayMode){
+        "home" -> {
+            HomeScreen(navHostController, myViewOfItemInfoViewModel)
+        }
+        "item_not_show" -> {
+            myViewOfItemInfoViewModel.searchByIsShow()
+            ShowScreen(navHostController, myViewOfItemInfoViewModel)
+        }
+        "is_collect_item" -> {
+            myViewOfItemInfoViewModel.searchByIsCollect()
+            ShowScreen(navHostController, myViewOfItemInfoViewModel)
+        }
+        "all_data_search" -> {
+            DatabaseQueryScreen()
+        }
+        "simple_password" -> {
+            PasssWordSettingsScreen()
         }
     }
 
-    FeatureListScreen(
-        features = features,
-        onFeatureClick = { handleFeatureClick(it.action) },
-        modifier = modifier
-    )
 }

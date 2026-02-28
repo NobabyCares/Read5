@@ -2,11 +2,11 @@ package com.example.read5.bean
 
 import androidx.room.Entity
 import androidx.room.Index
+import androidx.room.PrimaryKey
 
 
 @Entity(
     tableName = "comic_type_table",
-    primaryKeys = ["id"],
     indices = [
         // ✅ 新增：用 path + androidId 保证唯一性（核心！）
         Index(
@@ -16,7 +16,9 @@ import androidx.room.Index
     ]
     )
 data class ComicType(
-    var id: Int = 0,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
     var name: String,
+    val count: Int = 0,
     var cover: String = "",
 )

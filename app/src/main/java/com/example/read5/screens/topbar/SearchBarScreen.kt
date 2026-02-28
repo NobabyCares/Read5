@@ -18,29 +18,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import kotlinx.coroutines.delay
 
 //搜索框
 @Composable
 fun SearchBarScreen(
-    searchItemInfo: SearchItemInfo,
-    onDismiss: () -> Unit = {},
+    onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // 搜索框输入
     var searchQuery by remember { mutableStateOf("") }
 
-    LaunchedEffect(searchQuery) {
-        if (searchQuery.isNotBlank()) {
-            delay(200)
-            searchItemInfo.searchByName(searchQuery)
-        }
-    }
-
     OutlinedTextField(
         value = searchQuery,
-        onValueChange = { searchQuery = it },
+        onValueChange = {
+            searchQuery = it
+            onQueryChange(it)
+        }, // 直接回调给父组件,
         placeholder = { Text("请输入关键字") },
         leadingIcon = {
             Icon(Icons.Filled.Search, contentDescription = "搜索")

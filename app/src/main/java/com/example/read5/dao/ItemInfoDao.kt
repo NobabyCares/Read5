@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ItemInfoDao {
 
+    // 适用于数据量 < 2000 的场景，用于排查 Paging 问题
+    @Query("SELECT * FROM item_info_table WHERE category = :category ORDER BY name DESC")
+    fun getAllItemsByCategoryFlow(category: Long): Flow<List<ItemInfo>>
 
     // 按 category 分页,只显示isShow =1的
     @Query("SELECT * FROM item_info_table WHERE category = :categoryId AND isShow = 1 " +
@@ -24,10 +27,13 @@ interface ItemInfoDao {
     fun searchByCategory(categoryId: Long): PagingSource<Int, ItemInfo>
 
     // ✅ 新增：按 name 模糊搜索（不区分大小写）
-    @Query("SELECT * FROM item_info_table " +
-            "WHERE name LIKE '%' || :query || '%' ESCAPE '\\' AND isShow = 1 " +
-            "ORDER BY name COLLATE NOCASE ASC")
-    fun searchByName(query: String): PagingSource<Int, ItemInfo>
+    @Query("""
+        SELECT * FROM item_info_table 
+        WHERE name LIKE '%' || :query || '%' 
+          AND isShow = 1 
+        ORDER BY name COLLATE NOCASE ASC
+    """)
+     fun searchByName(query: String): Flow<List<ItemInfo>>
 
 
     @Query("SELECT * FROM item_info_table " +

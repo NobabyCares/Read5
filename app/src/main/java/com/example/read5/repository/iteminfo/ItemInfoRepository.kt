@@ -18,7 +18,7 @@ interface ItemInfoRepository {
     // ✅ 新增：返回可参数化的分页流
     fun searchByCategory(categoryId: Long): Flow<PagingData<ItemInfo>>
 
-    fun searchByName(name: String): Flow<PagingData<ItemInfo>>
+    suspend fun searchByName(name: String): Flow<List<ItemInfo>>
 
     fun searchById(id: List<Long>): Flow<PagingData<ItemInfo>>
 
@@ -50,6 +50,8 @@ interface ItemInfoRepository {
     fun sortBySortField(sortField: SortField, ascending: Boolean, category: Long): Flow<PagingData<ItemInfo>>
 
 
+    // ✅ 新增：返回全量列表的 Flow
+    fun getAllItemsByCategoryFlow(category: Long): Flow<List<ItemInfo>>
 
 
 
@@ -71,16 +73,8 @@ class ItemInfoRepositoryImpl @Inject constructor(
         ).flow
     }
 
-    override  fun searchByName(name: String): Flow<PagingData<ItemInfo>> {
-        return Pager(
-            config = PagingConfig(
-                pageSize = 20,
-                enablePlaceholders = false
-            ),
-            pagingSourceFactory = {
-                itemInfoDao.searchByName(name.trim())
-            }
-        ).flow
+    override suspend fun searchByName(name: String): Flow<List<ItemInfo>> {
+        return itemInfoDao.searchByName(name.trim())
     }
 
     override fun searchById(id: List<Long>): Flow<PagingData<ItemInfo>> {
@@ -140,6 +134,10 @@ class ItemInfoRepositoryImpl @Inject constructor(
                 }
             }
         ).flow
+    }
+
+    override fun getAllItemsByCategoryFlow(category: Long): Flow<List<ItemInfo>> {
+        return itemInfoDao.getAllItemsByCategoryFlow(category)
     }
 
 

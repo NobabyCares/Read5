@@ -64,20 +64,7 @@ fun ComciTypeCardScreen(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // 数量徽章
-            Badge(
-                containerColor = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.secondary
-                },
-                modifier = Modifier.padding(top = 2.dp)
-            ) {
-                Text(
-                    text = count.toString(),
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
+
         }
     }
 }

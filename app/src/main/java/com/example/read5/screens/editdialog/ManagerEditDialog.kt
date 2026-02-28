@@ -41,19 +41,15 @@ fun ManagerEditDialog(
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
+
         ItemEditDialog(item = item, onDismiss = { onDismiss() })
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        ComicTypeEditDialog(itemId = item.id, onDismiss = { onDismiss() })
+        ComicTypeEditDialog(item = item, onDismiss = { onDismiss() })
 
 
     }
 
 
-    // 辅助函数：创建一个可变的 Set State
-    @Composable
-    fun <T> rememberMutableStateSetOf(): MutableState<Set<T>> {
-        return remember { mutableStateOf(setOf()) }
-    }
 }

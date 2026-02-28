@@ -14,24 +14,24 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ComicTypeDao {
-    @Query("SELECT * FROM comic_type_table")
-    suspend fun getAllTypes(): List<ComicType>
+    @Query("UPDATE comic_type_table SET name = :name WHERE id = :id")
+    suspend fun updateComicTypeName(id: Int, name: String)
+    @Query("UPDATE comic_type_table SET cover = :cover WHERE id IN (:ids)")
+    suspend fun updateComicTypeCover(ids: List<Int>, cover: String)
+    @Query("UPDATE comic_type_table SET count = :count WHERE id = :id")
+    suspend fun updateComicTypeCount(id: Int, count: Int)
+
+
+    @Query("""
+        SELECT * FROM comic_type_table 
+        WHERE name LIKE '%' || :query || '%' 
+        ORDER BY name COLLATE NOCASE ASC
+    """)
+      fun getComicTypeByName(query: String): Flow<List<ComicType>>
 
     // ComicTypeDao.kt
     @Query("SELECT * FROM comic_type_table ORDER BY name")
-    fun getAllTypesFlow(): Flow<List<ComicType>>  // 👈 不是 suspend，返回 Flow！
-
-    // ─── 插入分类 ────────────────────────
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertType(type: ComicType): Long
-
-    // ─── 插入关联（中间表）────────────────
-    @Insert
-    suspend fun insertCrossRef(crossRef: ItemComicTypeCrossRef)
-
-    // ─── 批量插入关联（推荐）──────────────
-    @Insert
-    suspend fun insertCrossRefs(crossRefs: List<ItemComicTypeCrossRef>)
+      fun getAllTypesFlow(): Flow<List<ComicType>>  // 👈 不是 suspend，返回 Flow！
 
     // ─── 查询：根据 Item ID 获取完整信息 + 分类 ──
     @Transaction
@@ -57,4 +57,23 @@ interface ComicTypeDao {
     // 👇 新增：根据 itemId 获取它关联的所有 typeId 列表
     @Query("SELECT typeId FROM item_comic_type_cross_ref WHERE itemId = :itemId")
     suspend fun getTypeIdByItemId(itemId: Long): List<Int>
+
+
+    // ─── 插入分类 ────────────────────────
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertType(type: ComicType): Long
+
+    // ─── 插入关联（中间表）────────────────
+    @Insert
+    suspend fun insertCrossRef(crossRef: ItemComicTypeCrossRef)
+
+    // ─── 批量插入关联（推荐）──────────────
+    @Insert
+    suspend fun insertCrossRefs(crossRefs: List<ItemComicTypeCrossRef>)
+
+    @Query("DELETE FROM comic_type_table WHERE id = :id")
+    suspend fun deleteById(id: Int): Int
+
+
+
 }

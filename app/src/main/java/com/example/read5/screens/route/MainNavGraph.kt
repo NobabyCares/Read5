@@ -16,14 +16,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.read5.screens.BookShelfScreen
 import com.example.read5.screens.CenteredText
-import com.example.read5.screens.auth.SettingsScreen
+import com.example.read5.screens.auth.PasssWordSettingsScreen
 import com.example.read5.screens.myview.DatabaseQueryScreen
-import com.example.read5.screens.myview.IsShowScreen
 import com.example.read5.screens.myview.MyViewScreen
 import com.example.read5.screens.readview.comic.HorizontalComicReader
 import com.example.read5.screens.readview.comic.VerticalComicReader
 import com.example.read5.screens.sortbar.SortField
-import com.example.read5.viewmodel.iteminfo.SearchItemInfo
 import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 
 
@@ -32,17 +30,12 @@ import com.example.read5.viewmodel.storehouse.StoreHouseViewModel
 fun MainNavGraph(
     navController: NavHostController,
     startDestination: String,
-    // 用于接收 Scaffold 的 innerPadding
-    paddingValues: PaddingValues,
-    searchItemInfo: SearchItemInfo,
-    storeHouseViewModel: StoreHouseViewModel,
 ) {
 
 
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = Modifier.padding(paddingValues),
     ) {
         // 1. 在 NavGraph 中定义带参数的路由
         composable(
@@ -57,30 +50,28 @@ fun MainNavGraph(
             val displayMode = backStackEntry.arguments?.getString("displayMode") ?: "bookdesk"
 
             BookShelfScreen(
-                navController = navController,
-                searchItemInfo = searchItemInfo,
-                storeHouseModel = storeHouseViewModel,
+                navHostController = navController,
                 displayMode = displayMode,
             )
         }
-        //跳转界面
-        composable("reading") {
-            CenteredText("跳转：阅读")
-        }
+
+
         //我的设置界面
-        composable("my_view") {
-            MyViewScreen(navController,  searchItemInfo = searchItemInfo)
-        }
-        //隐藏项目
-        composable("item_not_show") {
-            IsShowScreen(navHostController = navController, searchItemInfo = searchItemInfo)
+        composable(
+            route = "my_view/{displayMode}",
+            arguments = listOf(
+                navArgument("displayMode") {
+                    defaultValue="Home"
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            val displayMode = backStackEntry.arguments?.getString("displayMode") ?: "Home"
+            MyViewScreen(navController, displayMode)
         }
 
 
-        //密码设置界面
-        composable("simple_password") {
-            SettingsScreen()
-        }
+
         //竖屏阅读
         composable(route = "vertical_comic_view/{offsetY}",
             arguments = listOf(
@@ -101,12 +92,5 @@ fun MainNavGraph(
             val offsetY = backStackEntry.arguments?.getInt("offsetY") ?: 0
             HorizontalComicReader(navController = navController, offsetY)
         }
-
-        //横屏阅读
-        composable("all_data_search") {
-            DatabaseQueryScreen()
-        }
-
-
     }
 }

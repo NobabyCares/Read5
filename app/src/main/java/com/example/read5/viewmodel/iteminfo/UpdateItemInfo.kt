@@ -20,22 +20,18 @@ class UpdateItemInfo @Inject constructor(
 ) : ViewModel() {
 
     val TAG = "UpdateItemInfo"
-     fun updateCollectStatus(id: Long, isCollect: Boolean) {
-        viewModelScope.launch {
-            itemInfoRepository.updateByCollect(id, isCollect)
-        }
-    }
+
 
     suspend fun updateCurrentPage(id: Long, currentPage: Int) {
         itemInfoRepository.updateByCurrentPage(id, currentPage)
     }
 
-     fun updateByIsShow(id: Long, isShow: Boolean) {
-         viewModelScope.launch(Dispatchers.IO) { // 👈 在协程中调用 suspend 函数
-             val result = itemInfoRepository.updateByIsShow(id, isShow)
-             Log.d(TAG, "updateByIsShow: $result")
-         }
-     }
+    fun updateByIsShow(id: Long, isShow: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { // 👈 在协程中调用 suspend 函数
+            val result = itemInfoRepository.updateByIsShow(id, isShow)
+            Log.d(TAG, "updateByIsShow: $result")
+        }
+    }
 
     fun updateByCount(id: Long, addOrSub: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -50,4 +46,9 @@ class UpdateItemInfo @Inject constructor(
         }
     }
 
+    fun updateCollectStatus(id: Long, isCollect: Boolean) {
+        viewModelScope.launch {
+            itemInfoRepository.updateByCollect(id, isCollect)
+        }
+    }
 }

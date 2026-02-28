@@ -1,6 +1,7 @@
 package com.example.read5.screens.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -41,6 +42,13 @@ fun SimplePasswordScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .clickable( // 2. 让背景可点击，但什么都不做（消耗事件）
+                interactionSource = null,
+                indication = null
+            ) {
+                // 点击背景空白处，可以选择忽略，或者再次提示
+                // 这里留空，就是为了“吃掉”点击事件，防止透传
+            }
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

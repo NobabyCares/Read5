@@ -44,7 +44,7 @@ fun LazyGridScrollbar(
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .width(32.dp)  // 更宽的点击区域
+            .width(14.dp)  // 更宽的点击区域
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { offset ->

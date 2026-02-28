@@ -33,6 +33,7 @@ import com.example.read5.global.GlobalSettings
 import com.example.read5.global.SimplePasswordManager
 import com.example.read5.screens.MainBookApp
 import com.example.read5.screens.auth.SimplePasswordScreen
+import com.example.read5.screens.iteminfo.PureDebugScreen
 import com.example.read5.screens.readview.comic.SimpleProgressBar
 import com.example.read5.screens.sortbar.SortBarScreen
 import com.example.read5.screens.sortbar.SortOption
@@ -64,8 +65,10 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     // 主应用界面（始终存在，状态不会丢失）
                     MainBookApp()
+
+
                     // 密码覆盖层（需要时显示在上面）
-                    /*if (showPasswordOverlay) {
+                    if (showPasswordOverlay) {
                         SimplePasswordScreen(
                             onSuccess = {
                                 SimplePasswordManager.recordUnlock(this@MainActivity)
@@ -75,12 +78,12 @@ class MainActivity : ComponentActivity() {
                                 finish()
                             }
                         )
-                    }*/
+                    }
                 }
             }
         }
         // 初始检查是否需要显示密码
-//        checkPasswordStatus()
+    checkPasswordStatus()
     }
 
     private fun checkPasswordStatus() {

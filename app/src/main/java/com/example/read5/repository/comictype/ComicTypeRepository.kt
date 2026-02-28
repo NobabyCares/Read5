@@ -1,6 +1,7 @@
 // ComicTypeRepository.kt
 package com.example.read5.repository.comictype
 
+import androidx.room.Query
 import com.example.read5.bean.ComicType
 import com.example.read5.bean.ItemComicTypeCrossRef
 import com.example.read5.bean.ItemWithTypes
@@ -10,9 +11,16 @@ import javax.inject.Inject
 
 
 interface  ComicTypeRepositoryApi{
-    suspend fun getAllTypes(): List<ComicType>
+    suspend fun updateComicTypeName(id: Int, name: String)
 
-    fun getAllTypesFlow(): Flow<List<ComicType>>
+    suspend fun updateComicTypeCover(ids: List<Int>, cover: String)
+
+    suspend fun updateComicTypeCount(id: Int, count: Int)
+
+
+     fun getAllTypesFlow(): Flow<List<ComicType>>
+    suspend fun getComicTypeByName(query: String): Flow<List<ComicType>>
+
 
     suspend fun insertType(type: ComicType): Long
 
@@ -21,19 +29,34 @@ interface  ComicTypeRepositoryApi{
     suspend fun getItemsByTypeId(typeId: Int): List<ItemWithTypes>
 
     suspend fun getTypeIdByItemId(id: Long): List<Int>
+
+    suspend fun deleteById(id: Int): Int
 }
 class ComicTypeRepository @Inject constructor(
     private val comicTypeDao: ComicTypeDao
 ): ComicTypeRepositoryApi {
-
-    // ─── 1. 查询所有分类（用于显示）────────────
-    override suspend fun getAllTypes(): List<ComicType> {
-        return comicTypeDao.getAllTypes()
+    override suspend fun updateComicTypeName(id: Int, name: String) {
+        comicTypeDao.updateComicTypeName(id, name)
     }
 
-    override fun getAllTypesFlow(): Flow<List<ComicType>> {
+    override suspend fun updateComicTypeCover(ids: List<Int>, cover: String) {
+        comicTypeDao.updateComicTypeCover(ids, cover)
+    }
+
+    override suspend fun updateComicTypeCount(id: Int, count: Int) {
+        comicTypeDao.updateComicTypeCount(id, count)
+    }
+
+
+
+    override  fun getAllTypesFlow(): Flow<List<ComicType>> {
         return comicTypeDao.getAllTypesFlow()
     }
+
+    override suspend fun getComicTypeByName(query: String): Flow<List<ComicType>> {
+        return comicTypeDao.getComicTypeByName(query)
+    }
+
 
     // ─── 2. 插入新分类 ──────────────────────
     override suspend fun insertType(type: ComicType): Long {
@@ -56,5 +79,9 @@ class ComicTypeRepository @Inject constructor(
 
     override suspend fun getTypeIdByItemId(id: Long): List<Int> {
         return comicTypeDao.getTypeIdByItemId(id)
+    }
+
+    override suspend fun deleteById(id: Int): Int {
+        return comicTypeDao.deleteById(id)
     }
 }

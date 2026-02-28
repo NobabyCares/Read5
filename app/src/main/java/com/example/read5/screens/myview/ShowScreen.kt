@@ -5,26 +5,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.read5.global.GlobalSettings
 import com.example.read5.screens.iteminfo.ItemInfoScreen
-import com.example.read5.screens.storehouse.StoreHouseCard
 import com.example.read5.singledata.DocumentHolder
-import com.example.read5.viewmodel.iteminfo.SearchItemInfo
+import com.example.read5.viewmodel.iteminfo.MyViewOfItemInfoViewModel
 
 @Composable
-fun IsShowScreen(
+fun ShowScreen(
     navHostController: NavHostController,
-    searchItemInfo: SearchItemInfo
+    myViewOfItemInfoViewModel: MyViewOfItemInfoViewModel
 ) {
     //这个是展示数据,可能是搜索数据,也可能是全部数据
-    val itemInfos = searchItemInfo.items.collectAsLazyPagingItems()
+    val itemInfos = myViewOfItemInfoViewModel.items.collectAsLazyPagingItems()
 
     Column {
         LazyVerticalGrid(

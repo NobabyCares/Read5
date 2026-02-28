@@ -16,25 +16,25 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.read5.bean.ComicType
+import com.example.read5.bean.ItemInfo
 import com.example.read5.viewmodel.comictype.ComicTypeSearchViewModel
 
 // ✅ 新增：可复用的分类选择器（无弹窗外壳）
 
 @Composable
 fun ComicTypeEditDialog(
-    itemId: Long,
+    item: ItemInfo,
     onDismiss: () -> Unit = {},
-    onSave: (List<Int>) -> Unit = {},
     modifier: Modifier = Modifier,
-    comicTypeSearchviewModel: ComicTypeSearchViewModel = hiltViewModel()
+    comicTypeSearchViewModel: ComicTypeSearchViewModel = hiltViewModel()
 ) {
-    val comicTypes by comicTypeSearchviewModel.allTypes.collectAsStateWithLifecycle()
+    val comicTypes by comicTypeSearchViewModel.allTypes.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
 
     // 异步加载已选分类 ID（仅用于初始化）
     val initialSelectedIds by produceState<Set<Int>>(initialValue = emptySet()) {
         value = try {
-            comicTypeSearchviewModel.getTypeIdByItemId(itemId).toSet()
+            comicTypeSearchViewModel.getTypeIdByItemId(item.id).toSet()
         } catch (e: Exception) {
             e.printStackTrace()
             emptySet()
@@ -51,16 +51,6 @@ fun ComicTypeEditDialog(
         )
     }
 
-    // 只在 comicTypes 未加载时显示 loading
-    if (comicTypes.isEmpty()) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
 
     // ✅ 核心：不再用 weight，让内容自然流动
     Column(
@@ -130,7 +120,8 @@ fun ComicTypeEditDialog(
 
             Button(
                 onClick = {
-                    comicTypeSearchviewModel.insertItemToTypes(itemId,selectedIds)
+                    comicTypeSearchViewModel.updateComicTypeCover(selectedIds, item.hash)
+                    comicTypeSearchViewModel.insertItemToTypes(item.id, selectedIds)
                     onDismiss()
                 },
                 enabled = selectedIds.isNotEmpty(),
@@ -160,8 +151,8 @@ fun ComicTypeEditDialog(
                 TextButton(
                     onClick = {
                         if (newTypeName.isNotBlank()) {
-                            comicTypeSearchviewModel.insertType(ComicType(name = newTypeName))
-                            onDismiss()
+                            comicTypeSearchViewModel.insertType(ComicType(name = newTypeName))
+                            showCreateDialog = false
                         }
                     },
                     enabled = newTypeName.isNotBlank()
