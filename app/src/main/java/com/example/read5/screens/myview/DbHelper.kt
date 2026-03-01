@@ -55,7 +55,7 @@ object DbHelper {
                                     val androidId =
                                         cursor.getString(cursor.getColumnIndexOrThrow("androidId"))
                                     val totalPage =
-                                        cursor.getInt(cursor.getColumnIndexOrThrow("totalPages")) // 👈 关键
+                                        cursor.getInt(cursor.getColumnIndexOrThrow("totalPage")) // 👈 关键
                                     val currentPage =
                                         cursor.getInt(cursor.getColumnIndexOrThrow("currentPage"))
                                     val cover =

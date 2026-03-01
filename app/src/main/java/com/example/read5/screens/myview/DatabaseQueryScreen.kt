@@ -1,4 +1,3 @@
-// screens/myview/DatabaseQueryScreen.kt
 package com.example.read5.screens.myview
 
 import androidx.compose.foundation.clickable
@@ -7,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,12 +18,17 @@ import com.example.read5.bean.ItemInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Job
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatabaseQueryScreen(
     modifier: Modifier = Modifier,
-    onItemClicked: (ItemInfo) -> Unit = {}
+    onItemClicked: (ItemInfo) -> Unit = {},
+    debounceTimeMs: Long = 500 // 防抖时间，避免频繁查询
 ) {
     var dbPath by remember { mutableStateOf("/storage/emulated/0/Download/PC.db") }
     var keyword by remember { mutableStateOf("") }
@@ -31,17 +36,30 @@ fun DatabaseQueryScreen(
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // 🔁 提取查询逻辑为函数，避免重复
-    fun performQuery() {
-        if (dbPath.isBlank()) return
-        val trimmedKeyword = keyword.trim().ifBlank { null } // ✅ 去除前后空白
-        isLoading = true
-        scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                DbHelper.queryItemsByName(dbPath, trimmedKeyword)
+    // 创建搜索关键词的 StateFlow
+    val searchQuery = remember { MutableStateFlow("") }
+
+    // 监听搜索关键词变化，自动执行查询
+    LaunchedEffect(searchQuery) {
+        searchQuery
+            .debounce(debounceTimeMs) // 防抖，避免每次按键都查询
+            .collectLatest { query ->
+                if (dbPath.isNotBlank()) {
+                    isLoading = true
+                    val trimmedQuery = query.trim().ifBlank { null }
+                    val result = withContext(Dispatchers.IO) {
+                        DbHelper.queryItemsByName(dbPath, trimmedQuery)
+                    }
+                    items = result
+                    isLoading = false
+                }
             }
-            items = result
-            isLoading = false
+    }
+
+    // 当 dbPath 变化时，重新查询
+    LaunchedEffect(dbPath) {
+        if (dbPath.isNotBlank() && keyword.isNotBlank()) {
+            searchQuery.value = keyword // 触发重新查询
         }
     }
 
@@ -52,7 +70,7 @@ fun DatabaseQueryScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "按书名模糊查询",
+            text = "按书名模糊查询（自动更新）",
             style = MaterialTheme.typography.headlineSmall
         )
 
@@ -66,43 +84,65 @@ fun DatabaseQueryScreen(
 
         OutlinedTextField(
             value = keyword,
-            onValueChange = { keyword = it },
+            onValueChange = {
+                keyword = it
+                searchQuery.value = it // 触发自动查询
+            },
             label = { Text("书名关键词") },
             placeholder = { Text("例如：Rust、第1话、漫画名...") },
-            singleLine = true, // ✅ 必须设为单行才能响应 IME
+            singleLine = true,
             keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Search, // 显示“搜索”按钮
+                imeAction = ImeAction.Done,
                 keyboardType = KeyboardType.Text
             ),
             keyboardActions = KeyboardActions(
-                onSearch = { performQuery() } // ✅ 回车/搜索键触发
+                onDone = { /* 键盘关闭时不需要额外操作 */ }
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                if (keyword.isNotBlank()) {
+                    IconButton(onClick = {
+                        keyword = ""
+                        searchQuery.value = ""
+                    }) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Filled.Clear,
+                            contentDescription = "清空"
+                        )
+                    }
+                }
+            }
         )
 
-        Button(
-            onClick = { performQuery() }, // ✅ 复用函数
-            enabled = !isLoading && dbPath.isNotBlank(),
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text("执行查询")
-            }
-        }
-
-        if (items.isEmpty()) {
-            Text(
-                text = if (isLoading) "查询中..." else "点击“执行查询”或按回车加载数据",
-                color = MaterialTheme.colorScheme.outline,
+        if (isLoading) {
+            LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth()
             )
-        } else {
+        }
+
+        if (items.isEmpty() && !isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (keyword.isBlank())
+                        "输入关键词开始搜索"
+                    else
+                        "未找到匹配的记录",
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        } else if (items.isNotEmpty()) {
+            // 显示结果数量
+            Text(
+                text = "找到 ${items.size} 条记录",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f)
@@ -111,7 +151,8 @@ fun DatabaseQueryScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onItemClicked(item) }
+                            .clickable { onItemClicked(item) },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -125,7 +166,8 @@ fun DatabaseQueryScreen(
                                 Text(
                                     text = item.path,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
+                                    color = MaterialTheme.colorScheme.outline,
+                                    maxLines = 1
                                 )
                             }
                             Text(
