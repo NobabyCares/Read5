@@ -19,5 +19,6 @@ data class StoreHouse (
     val type: String,
     // 存储数量
     val count: Long,
+    val folderPath: String,
     val lastUpdateTime: Long // 新增：记录最后更新时间的时间戳
 )

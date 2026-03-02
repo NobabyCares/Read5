@@ -43,7 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        val addStoreHouse: StoreHouse = StoreHouse(name = "+", type = "", count = 0L, lastUpdateTime = 0L)
+        val addStoreHouse: StoreHouse = StoreHouse(name = "+", type = "", count = 0L, lastUpdateTime = 0L, folderPath = "")
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -59,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
                             CoroutineScope(Dispatchers.IO).launch {
                                 getInstance(context).storeHouseDao().let { dao ->
                                     listOf(
-                                        StoreHouse(name = "+", type = "", count = 0L, lastUpdateTime = 0L)
+                                        StoreHouse(name = "+", type = "", count = 0L, lastUpdateTime = 0L, folderPath = "")
                                     ).forEach { dao.insert(it) }
                                 }
                             }
