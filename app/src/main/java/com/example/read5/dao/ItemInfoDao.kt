@@ -125,9 +125,9 @@ interface ItemInfoDao {
             "ORDER BY name COLLATE NOCASE ASC")
     fun searchByIsCollect(): PagingSource<Int, ItemInfo>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(itemInfo: List<ItemInfo>): LongArray
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(itemInfo: ItemInfo): Long
 
     // 只更新收藏状态

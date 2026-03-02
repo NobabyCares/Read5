@@ -74,32 +74,39 @@ object FileScanner {
         }
         return result
     }
-
-//    通过文件夹查找漫画文件
-@RequiresApi(Build.VERSION_CODES.O)
-fun findComicBooksByFolder(path: String, category: Long): List<ItemInfo>{
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun findComicBooksByFolder(path: String, category: Long): List<ItemInfo> {
         val result = mutableListOf<ItemInfo>()
         val root = File(path)
 
-//    如果文件夹本身就是漫画文件夹,就不要玩后面遍历, 因为只有一个
-        if(root.exists() && root.isDirectory){
+        // 如果文件夹本身就是漫画文件夹
+        if (root.exists() && root.isDirectory) {
             val item = analyzeFolder(root, category)
-            if(item != null){
+            if (item != null) {
                 result.add(item)
-                return result
+                // 即使当前是漫画文件夹，也要继续遍历子文件夹
+                // 因为子文件夹可能也是独立的漫画文件夹
             }
         }
 
-//    开始循环遍历出来
+        // 开始循环遍历所有子文件夹
         val queue = ArrayDeque<File>()
         root.listFiles()?.forEach { queue.add(it) }
 
-        while (queue.isNotEmpty()){
-            val item = queue.removeFirst()
-            if(item.isDirectory){
-                val item = analyzeFolder(item, category)
-                if(item != null){
-                    result.add(item)
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            if (current.isDirectory) {
+                // 分析当前文件夹是否为漫画文件夹
+                val comicItem = analyzeFolder(current, category)
+                if (comicItem != null) {
+                    result.add(comicItem)
+                }
+
+                // ✅ 重要：将当前文件夹的所有子文件夹加入队列继续遍历
+                current.listFiles()?.forEach { subFile ->
+                    if (subFile.isDirectory) {
+                        queue.add(subFile)
+                    }
                 }
             }
         }
